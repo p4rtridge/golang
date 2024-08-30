@@ -1,7 +1,7 @@
-## Learn Go
+## Learn Go - Week-1
 
 ```bash
-week-n/
+week-1/
 |-cmd/
 | |-main.go
 | |
