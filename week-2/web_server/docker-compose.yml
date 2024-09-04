@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16.4
+    container_name: postgres
+    hostname: postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - server-net
+    ports:
+      - 5432:5432
+    restart: always
+    environment:
+      POSTGRES_USER: "partridge"
+      POSTGRES_PASSWORD: "130703"
+      POSTGRES_DB: "web-server"
+
+  postgres-load-sql:
+    image: postgres:16.4
+    container_name: postgres-load-sql
+    hostname: postgres-load-sql
+    depends_on:
+      - postgres
+    networks:
+      - server-net
+    environment:
+      USER_NAME: "partridge"
+      DATABASE: "web-server"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./migrations/1_init.sql:/migrations/1_init.sql
+      - ./init_db.sh:/migrations/init_db.sh
+    entrypoint: ["bash", "/migrations/init_db.sh"]
+
+volumes:
+  pg-data:
+
+networks:
+  server-net:
+    driver: bridge
