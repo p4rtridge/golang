@@ -2,45 +2,45 @@ package main
 
 import (
 	"log"
+	"os"
 
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/partridge1307/gofiber/config"
-	"github.com/partridge1307/gofiber/controllers"
-	"github.com/partridge1307/gofiber/infrastructure"
-	"github.com/partridge1307/gofiber/usecases"
+	"github.com/partridge1307/gofiber/api/handler"
+	"github.com/partridge1307/gofiber/infras/postgres"
+	"github.com/partridge1307/gofiber/pkg/validate"
+	"github.com/partridge1307/gofiber/usecase/auth"
+	"github.com/partridge1307/gofiber/usecase/user"
 )
 
 func main() {
-	// Init config
-	cfg, err := config.NewConfig()
+	pgPool, err := postgres.ConnectToPostgres(os.Getenv("PG_URL"))
 	if err != nil {
-		log.Fatalf("[Error]: Config error: %s", err.Error())
+		log.Fatalln("Failed to connect to postgres")
 	}
 
-	// Create Fiber's application
+	// Create support packages
+	validator := validate.New()
+
+	// Create repositories
+	postgresRepo := postgres.NewPostgresRepo(pgPool)
+
+	// Create usecases
+	authService := auth.NewService(validator, postgresRepo)
+	userService := user.NewService(postgresRepo)
+
+	// Create fiber's app
 	app := fiber.New(fiber.Config{
-		AppName:      cfg.Name,
-		ServerHeader: cfg.Header,
+		JSONEncoder: json.Marshal,
+		JSONDecoder: json.Unmarshal,
 	})
 
-	// Add middlewares
 	app.Use(logger.New())
 
-	// Create repos
-	postgresRepo, err := infrastructure.NewPostgresRepo(cfg)
-	if err != nil {
-		log.Fatalf("[Error]: Init repo error: %s", err.Error())
-	}
+	// Prepare routes
+	handler.NewAuthHandler(app.Group("/api/v1/auth"), authService)
+	handler.NewUserHandler(app.Group("/api/v1/users"), userService)
 
-	// Create use cases
-	authUsecase := usecases.NewAuthUsecase(postgresRepo)
-	userUsecase := usecases.NewUserUsecase(postgresRepo)
-
-	// Prepare endpoints
-	controllers.NewAuthController(app.Group("/api/v1/auth"), authUsecase)
-	controllers.NewUserController(app.Group("/api/v1/users"), userUsecase)
-
-	// Listen to port 8080
-	log.Fatal(app.Listen("0.0.0.0:8080"))
+	log.Fatalln(app.Listen("0.0.0.0:8080"))
 }

@@ -1,6 +1,7 @@
-package helpers
+package password
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -17,24 +18,32 @@ const (
 	SALT_LENGTH = 16
 )
 
-func HashPassword(password string) (string, error) {
-	// Generate salt
+func generateSalt() ([]byte, error) {
 	salt := make([]byte, SALT_LENGTH)
 	_, err := rand.Read(salt)
+	if err != nil {
+		return nil, err
+	}
+
+	return salt, nil
+}
+
+func Hash(password string) (string, error) {
+	salt, err := generateSalt()
 	if err != nil {
 		return "", err
 	}
 
-	hash := argon2.IDKey([]byte(password), salt, TIME, MEMORY, uint8(runtime.NumCPU()), KEY_LENGTH)
+	hashed := argon2.IDKey([]byte(password), salt, TIME, MEMORY, uint8(runtime.NumCPU()), KEY_LENGTH)
 
 	saltB64 := base64.RawStdEncoding.EncodeToString(salt)
-	hashB64 := base64.RawStdEncoding.EncodeToString(hash)
+	hashB64 := base64.RawStdEncoding.EncodeToString(hashed)
 
 	return fmt.Sprintf("%s$%s", saltB64, hashB64), nil
 }
 
-func VerifyPassword(password string, encodedHash string) (bool, error) {
-	parts := strings.Split(encodedHash, "$")
+func Verify(password, hashedPassword string) (bool, error) {
+	parts := strings.Split(hashedPassword, "$")
 
 	salt, err := base64.RawStdEncoding.DecodeString(parts[0])
 	if err != nil {
@@ -48,15 +57,9 @@ func VerifyPassword(password string, encodedHash string) (bool, error) {
 
 	hash := argon2.IDKey([]byte(password), salt, TIME, MEMORY, uint8(runtime.NumCPU()), KEY_LENGTH)
 
-	if len(hash) != len(hashed) {
+	if bytes.Equal(hash, hashed) {
 		return false, nil
+	} else {
+		return true, nil
 	}
-
-	for i := 0; i < len(hash); i++ {
-		if hash[i] != hashed[i] {
-			return false, nil
-		}
-	}
-
-	return true, nil
 }
