@@ -1,0 +1,37 @@
+services:
+  app:
+    restart: always
+    container_name: app
+    image: application:latest
+    build:
+      context: .
+      target: prod
+      dockerfile: Dockerfile
+    networks:
+      - app-net
+    depends_on:
+      - postgres
+    ports:
+      - 8080:8080
+    command: ./application
+
+  postgres:
+    restart: always
+    container_name: postgres
+    image: postgres:16.4
+    networks:
+      - app-net
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: "130703"
+      POSTGRES_DB: "application"
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  pg-data:
