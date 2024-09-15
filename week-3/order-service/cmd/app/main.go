@@ -16,11 +16,13 @@ import (
 func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *redis.Client) {
 	// create businesses
 	authBiz := composer.ComposeAuthBusiness(cfg, pg, rd)
-	userBiz := composer.ComposeUserBusiness(cfg, pg)
+	userBiz := composer.ComposeUserBusiness(pg)
+	productBiz := composer.ComposeProductBusiness(pg)
 
 	// create services
 	authAPIService := composer.ComposeAuthAPIService(authBiz)
 	userAPIService := composer.ComposeUserAPIService(userBiz)
+	productAPIService := composer.ComposeProductAPIService(productBiz)
 
 	// create middlewares
 	authMiddleware := middleware.RequireAuth(authBiz)
@@ -33,7 +35,6 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 		authRouter.Post("/register", authAPIService.Register)
 		authRouter.Post("/login", authAPIService.Login)
 		authRouter.Post("/refresh", authAPIService.Refresh)
-		authRouter.Post("/refresh", authAPIService.Refresh)
 		authRouter.Post("/sign-out", authMiddleware, authAPIService.SignOut)
 		authRouter.Post("/sign-out-all", authMiddleware, authAPIService.SignOutAll)
 	}
@@ -41,7 +42,20 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 	// /users
 	userRouter := router.Group("/users", authMiddleware)
 	{
+		userRouter.Get("/", userAPIService.GetUsers)
+		userRouter.Get("/:userID", userAPIService.GetUser)
 		userRouter.Get("/profile", userAPIService.GetUserProfile)
+		userRouter.Post("/balance", userAPIService.AddUserBalance)
+	}
+
+	// /products
+	productRouter := router.Group("/products")
+	{
+		productRouter.Get("/", productAPIService.GetProducts)
+		productRouter.Get("/:productID", productAPIService.GetProduct)
+		productRouter.Post("/", authMiddleware, productAPIService.CreateProduct)
+		productRouter.Put("/:productID", authMiddleware, productAPIService.UpdateProduct)
+		productRouter.Delete("/:productID", authMiddleware, productAPIService.DeleteProduct)
 	}
 }
 
