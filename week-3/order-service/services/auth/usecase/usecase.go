@@ -18,6 +18,8 @@ type AuthRepository interface {
 type TokenRepository interface {
 	SetRefreshToken(ctx context.Context, userID int, deviceID, token string, expiration int) error
 	GetRefreshToken(ctx context.Context, userID int, deviceID string) (string, error)
+	DeleteRefreshToken(ctx context.Context, userID int, deviceID string) error
+	DeleteAllRefreshToken(ctx context.Context, userID int) error
 }
 
 type Hasher interface {
@@ -186,4 +188,44 @@ func (uc *authUsecase) Refresh(ctx context.Context, data *authEntity.RefreshToke
 			ExpiredIn: rtExpireIn,
 		},
 	}, nil
+}
+
+func (uc *authUsecase) SignOut(ctx context.Context, data *authEntity.AuthSignOut) error {
+	if err := data.Validate(); err != nil {
+		return core.ErrUnauthorized.WithError(err.Error())
+	}
+
+	requester := core.GetRequester(ctx)
+
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	requesterId := int(uid.GetLocalID())
+
+	err = uc.tokenRepo.DeleteRefreshToken(ctx, requesterId, data.DeviceId)
+	if err != nil {
+		return core.ErrNotFound.WithError(authEntity.ErrSignoutFailed.Error())
+	}
+
+	return nil
+}
+
+func (uc *authUsecase) SignOutAll(ctx context.Context) error {
+	requester := core.GetRequester(ctx)
+
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	requesterId := int(uid.GetLocalID())
+
+	err = uc.tokenRepo.DeleteAllRefreshToken(ctx, requesterId)
+	if err != nil {
+		return core.ErrNotFound.WithError(authEntity.ErrSignoutFailed.Error())
+	}
+
+	return nil
 }

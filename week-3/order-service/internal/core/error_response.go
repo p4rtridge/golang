@@ -59,4 +59,16 @@ var ErrUnauthorized = DefaultError{
 	CodeField:   http.StatusUnauthorized,
 }
 
+var ErrNotFound = DefaultError{
+	StatusField: http.StatusText(http.StatusNotFound),
+	ErrorField:  "The requested resource could not be found",
+	CodeField:   http.StatusNotFound,
+}
+
+var ErrConfict = DefaultError{
+	StatusField: http.StatusText(http.StatusConflict),
+	ErrorField:  "The resource could not be created due to a conflict",
+	CodeField:   http.StatusConflict,
+}
+
 var ErrRecordNotFound = errors.New("record not found")

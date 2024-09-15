@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"order_service/internal/core"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -40,4 +41,34 @@ func (repo *redisRepo) GetRefreshToken(ctx context.Context, userID int, deviceID
 	}
 
 	return token, nil
+}
+
+func (repo *redisRepo) DeleteRefreshToken(ctx context.Context, userID int, deviceID string) error {
+	key := fmt.Sprintf("refresh_token:%d:%s", userID, deviceID)
+
+	affected, err := repo.db.Del(ctx, key).Result()
+	if affected == 0 {
+		return core.ErrRecordNotFound
+	}
+	if err != nil {
+		fmt.Println("del rt", err)
+		return err
+	}
+
+	return nil
+}
+
+func (repo *redisRepo) DeleteAllRefreshToken(ctx context.Context, userID int) error {
+	key := fmt.Sprintf("refresh_token:%d:*", userID)
+
+	affected, err := repo.db.Del(ctx, key).Result()
+	if affected == 0 {
+		return core.ErrRecordNotFound
+	}
+	if err != nil {
+		fmt.Println("del all rt", err)
+		return err
+	}
+
+	return nil
 }

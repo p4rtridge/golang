@@ -14,6 +14,8 @@ type AuthUseCase interface {
 	Login(ctx context.Context, data *entity.AuthLogin) (*entity.TokenResponse, error)
 	Verify(ctx context.Context, token string) (string, string, error)
 	Refresh(ctx context.Context, data *entity.RefreshTokenRequest) (*entity.TokenResponse, error)
+	SignOut(ctx context.Context, data *entity.AuthSignOut) error
+	SignOutAll(ctx context.Context) error
 }
 
 type api struct {
@@ -78,4 +80,46 @@ func (api *api) Refresh(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(core.ResponseData(response))
+}
+
+func (api *api) SignOut(c *fiber.Ctx) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	requester, ok := c.Locals(core.KeyRequester).(core.Requester)
+	if !ok {
+		return pkg.WriteResponse(c, core.ErrUnauthorized)
+	}
+	ctx = core.ContextWithRequester(ctx, requester)
+
+	var data entity.AuthSignOut
+
+	if err := c.BodyParser(&data); err != nil {
+		return pkg.WriteResponse(c, err)
+	}
+
+	err := api.usecase.SignOut(ctx, &data)
+	if err != nil {
+		return pkg.WriteResponse(c, err)
+	}
+
+	return c.Status(fiber.StatusNoContent).JSON(core.ResponseData(true))
+}
+
+func (api *api) SignOutAll(c *fiber.Ctx) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	requester, ok := c.Locals(core.KeyRequester).(core.Requester)
+	if !ok {
+		return pkg.WriteResponse(c, core.ErrUnauthorized)
+	}
+	ctx = core.ContextWithRequester(ctx, requester)
+
+	err := api.usecase.SignOutAll(ctx)
+	if err != nil {
+		return pkg.WriteResponse(c, err)
+	}
+
+	return c.Status(fiber.StatusNoContent).JSON(core.ResponseData(true))
 }

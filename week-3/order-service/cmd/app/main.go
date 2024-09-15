@@ -33,6 +33,9 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 		authRouter.Post("/register", authAPIService.Register)
 		authRouter.Post("/login", authAPIService.Login)
 		authRouter.Post("/refresh", authAPIService.Refresh)
+		authRouter.Post("/refresh", authAPIService.Refresh)
+		authRouter.Post("/sign-out", authMiddleware, authAPIService.SignOut)
+		authRouter.Post("/sign-out-all", authMiddleware, authAPIService.SignOutAll)
 	}
 
 	// /users

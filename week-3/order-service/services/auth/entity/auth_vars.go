@@ -36,6 +36,18 @@ func (a *AuthLogin) Validate() error {
 	return nil
 }
 
+type AuthSignOut struct {
+	DeviceId string `json:"device_id"`
+}
+
+func (a *AuthSignOut) Validate() error {
+	if err := pkg.DeviceIdIsValid(a.DeviceId); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type Token struct {
 	Token     string `json:"token,omitempty"`
 	ExpiredIn int    `json:"expire_in,omitempty"`

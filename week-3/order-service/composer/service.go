@@ -11,6 +11,8 @@ type AuthService interface {
 	Register(*fiber.Ctx) error
 	Login(*fiber.Ctx) error
 	Refresh(*fiber.Ctx) error
+	SignOut(*fiber.Ctx) error
+	SignOutAll(*fiber.Ctx) error
 }
 
 type UserService interface {
