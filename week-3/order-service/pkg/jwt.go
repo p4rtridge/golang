@@ -9,36 +9,59 @@ import (
 )
 
 type jwtx struct {
-	secret_key       []byte
-	expireTokenInSec int
+	secret_key    []byte
+	atExpireInSec int
+	rtExpireInSec int
 }
 
-func NewJWT(secret_key string, expireTokenInSec int) *jwtx {
+func NewJWT(secret_key string, atExpireInSec, rtExpireInSec int) *jwtx {
 	return &jwtx{
-		secret_key:       []byte(secret_key),
-		expireTokenInSec: expireTokenInSec,
+		secret_key:    []byte(secret_key),
+		atExpireInSec: atExpireInSec,
+		rtExpireInSec: rtExpireInSec,
 	}
 }
 
-func (r *jwtx) IssueToken(ctx context.Context, id, sub string) (string, int, error) {
+func (r *jwtx) IssueAccessToken(ctx context.Context, id, sub string) (string, int, error) {
 	now := time.Now()
 
 	claims := jwt.RegisteredClaims{
 		Subject:   sub,
-		ExpiresAt: jwt.NewNumericDate(now.Add(time.Second * time.Duration(r.expireTokenInSec))),
+		ExpiresAt: jwt.NewNumericDate(now.Add(time.Second * time.Duration(r.atExpireInSec))),
 		NotBefore: jwt.NewNumericDate(now),
 		IssuedAt:  jwt.NewNumericDate(now),
 		ID:        id,
 	}
 
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	token, err := t.SignedString(r.secret_key)
+	signedToken, err := token.SignedString(r.secret_key)
 	if err != nil {
 		return "", 0, err
 	}
 
-	return token, r.expireTokenInSec, nil
+	return signedToken, r.atExpireInSec, nil
+}
+
+func (r *jwtx) IssueRefreshToken(ctx context.Context, id, sub string) (string, int, error) {
+	now := time.Now()
+
+	claims := jwt.RegisteredClaims{
+		Subject:   sub,
+		ExpiresAt: jwt.NewNumericDate(now.Add(time.Second * time.Duration(r.rtExpireInSec))),
+		NotBefore: jwt.NewNumericDate(now),
+		IssuedAt:  jwt.NewNumericDate(now),
+		ID:        id,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := token.SignedString(r.secret_key)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return signedToken, r.rtExpireInSec, nil
 }
 
 func (r *jwtx) ParseToken(ctx context.Context, tokenStr string) (*jwt.RegisteredClaims, error) {

@@ -29,9 +29,24 @@ services:
       POSTGRES_PASSWORD: "130703"
       POSTGRES_DB: "application"
 
+  redis:
+    restart: always
+    container_name: redis
+    image: redis:7.4
+    networks:
+      - app-net
+    volumes:
+      - rd-data:/data
+    ports:
+      - 6379:6379
+    environment:
+      REDIS_PASSWORD: "130703"
+    command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+
 networks:
   app-net:
     driver: bridge
 
 volumes:
   pg-data:
+  rd-data:

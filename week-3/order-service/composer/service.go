@@ -10,6 +10,7 @@ import (
 type AuthService interface {
 	Register(*fiber.Ctx) error
 	Login(*fiber.Ctx) error
+	Refresh(*fiber.Ctx) error
 }
 
 type UserService interface {

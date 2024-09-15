@@ -3,12 +3,15 @@ package pkg
 import (
 	"errors"
 	"regexp"
+
+	"github.com/google/uuid"
 )
 
 var (
 	ErrUsernameIsNotValid = errors.New("username is not valid. Accept only alphanumeric characters and hyphen letter")
 	ErrPasswordIsTooShort = errors.New("password too short, 8 characters at least")
 	ErrPasswordIsNotValid = errors.New("password is not valid. Must start with an uppercase or lowercase letter and contain at least one uppercase, lowercase and one digit")
+	ErrDeviceIdIsNotValid = errors.New("device id is not valid. Must be uuid")
 )
 
 // Check whether username is valid
@@ -36,6 +39,15 @@ func CheckPassword(password string) error {
 
 	if !re.MatchString(password) {
 		return ErrPasswordIsNotValid
+	}
+
+	return nil
+}
+
+func DeviceIdIsValid(u string) error {
+	_, err := uuid.Parse(u)
+	if err != nil {
+		return ErrDeviceIdIsNotValid
 	}
 
 	return nil

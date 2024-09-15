@@ -11,8 +11,9 @@ import (
 
 type AuthUseCase interface {
 	Register(ctx context.Context, data *entity.AuthUsernamePassword) error
-	Login(ctx context.Context, data *entity.AuthUsernamePassword) (*entity.TokenResponse, error)
-	Verify(ctx context.Context, accessToken string) (string, string, error)
+	Login(ctx context.Context, data *entity.AuthLogin) (*entity.TokenResponse, error)
+	Verify(ctx context.Context, token string) (string, string, error)
+	Refresh(ctx context.Context, data *entity.RefreshTokenRequest) (*entity.TokenResponse, error)
 }
 
 type api struct {
@@ -47,13 +48,31 @@ func (api *api) Login(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var data entity.AuthUsernamePassword
+	var data entity.AuthLogin
 
 	if err := c.BodyParser(&data); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
 	response, err := api.usecase.Login(ctx, &data)
+	if err != nil {
+		return pkg.WriteResponse(c, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(core.ResponseData(response))
+}
+
+func (api *api) Refresh(c *fiber.Ctx) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var data entity.RefreshTokenRequest
+
+	if err := c.BodyParser(&data); err != nil {
+		return pkg.WriteResponse(c, err)
+	}
+
+	response, err := api.usecase.Refresh(ctx, &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
