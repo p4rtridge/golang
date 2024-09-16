@@ -50,6 +50,7 @@ func (repo *postgresRepo) CreateProduct(ctx context.Context, data *entity.Produc
 
 func (repo *postgresRepo) GetProducts(ctx context.Context) (*[]entity.Product, error) {
 	rows, _ := repo.db.Query(ctx, QUERY_GET_PRODUCTS)
+	defer rows.Close()
 
 	datas, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (entity.Product, error) {
 		var data entity.Product

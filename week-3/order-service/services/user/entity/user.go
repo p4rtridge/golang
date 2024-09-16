@@ -21,3 +21,7 @@ func NewUser(id int, username, password string) User {
 		UpdatedAt: &time.Time{},
 	}
 }
+
+func (user *User) AddBalance(b float32) {
+	user.Balance += b
+}

@@ -22,10 +22,11 @@ CREATE TABLE IF NOT EXISTS products (
 
 CREATE TABLE IF NOT EXISTS orders (
   id              serial,
-  user_id         int       NOT NULL,
-  total_price     real      DEFAULT 0.0,
-  created_at      timestamp DEFAULT NOW(),
+  user_id         int           NOT NULL,
+  total_price     real          DEFAULT 0.0,
+  created_at      timestamp     DEFAULT NOW(),
   updated_at      timestamp,
+  status          order_status  NOT NULL DEFAULT 'pending',
 
   PRIMARY KEY (id)
 );
@@ -42,3 +43,5 @@ CREATE TABLE IF NOT EXISTS order_items (
   CONSTRAINT fk_order FOREIGN KEY (order_id) REFERENCES orders(id),
   CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
 );
+
+CREATE TYPE order_status AS ENUM ('pending', 'done', 'canceled');

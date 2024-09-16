@@ -34,6 +34,7 @@ func NewUserRepo(db *pgxpool.Pool) UserRepository {
 
 func (repo *postgresRepo) GetUsers(ctx context.Context) (*[]entity.User, error) {
 	rows, _ := repo.db.Query(ctx, QUERY_GET_USERS)
+	defer rows.Close()
 
 	datas, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (entity.User, error) {
 		var data entity.User

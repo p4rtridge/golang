@@ -21,3 +21,7 @@ func NewProduct(id int, name string, quantity int, price float32) Product {
 		UpdatedAt: &time.Time{},
 	}
 }
+
+func (product *Product) AddQuantity(q int) {
+	product.Quantity += q
+}

@@ -18,11 +18,13 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 	authUc := composer.ComposeAuthUsecase(cfg, pg, rd)
 	userUc := composer.ComposeUserUsecase(pg)
 	productUc := composer.ComposeProductUsecase(pg)
+	orderUc := composer.ComposeOrderUsecase(pg)
 
 	// create services
 	authAPIService := composer.ComposeAuthAPIService(authUc)
 	userAPIService := composer.ComposeUserAPIService(userUc)
 	productAPIService := composer.ComposeProductAPIService(productUc)
+	orderAPIService := composer.ComposeOrderAPIService(orderUc)
 
 	// create middlewares
 	authMiddleware := middleware.RequireAuth(authUc)
@@ -56,6 +58,13 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 		productRouter.Post("/", authMiddleware, productAPIService.CreateProduct)
 		productRouter.Put("/:productID", authMiddleware, productAPIService.UpdateProduct)
 		productRouter.Delete("/:productID", authMiddleware, productAPIService.DeleteProduct)
+	}
+
+	// /orders
+	orderRouter := router.Group("/orders", authMiddleware)
+	{
+		orderRouter.Get("/", orderAPIService.GetOrders)
+		orderRouter.Post("/", orderAPIService.CreateOrder)
 	}
 }
 

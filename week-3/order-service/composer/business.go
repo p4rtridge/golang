@@ -6,6 +6,8 @@ import (
 	authPGRepo "order_service/services/auth/repository/postgres"
 	authRDRepo "order_service/services/auth/repository/redis"
 	authUsecase "order_service/services/auth/usecase"
+	orderPGRepo "order_service/services/order/repository/postgres"
+	orderUsecase "order_service/services/order/usecase"
 	productPGRepo "order_service/services/product/repository/postgres"
 	productUsecase "order_service/services/product/usecase"
 	userPGRepo "order_service/services/user/repository/postgres"
@@ -35,4 +37,12 @@ func ComposeProductUsecase(db *pgxpool.Pool) productUsecase.ProductUsecase {
 	repo := productPGRepo.NewProductRepo(db)
 
 	return productUsecase.NewUsecase(repo)
+}
+
+func ComposeOrderUsecase(db *pgxpool.Pool) orderUsecase.OrderUsecase {
+	repo := orderPGRepo.NewOrderRepo(db)
+	userRepo := userPGRepo.NewUserRepo(db)
+	productRepo := productPGRepo.NewProductRepo(db)
+
+	return orderUsecase.NewUsecase(repo, userRepo, productRepo)
 }
