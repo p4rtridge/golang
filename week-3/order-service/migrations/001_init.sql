@@ -23,8 +23,7 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS orders (
   id              serial,
   user_id         int       NOT NULL,
-  product_id      int       NOT NULL,
-  total_price     float     DEFAULT 0.0,
+  total_price     real      DEFAULT 0.0,
   created_at      timestamp DEFAULT NOW(),
   updated_at      timestamp,
 
@@ -35,8 +34,8 @@ CREATE TABLE IF NOT EXISTS order_items (
   order_id      int,
   product_id    int,
   product_name  text,
-  product_price float,
-  quantity      float,
+  product_price real,
+  quantity      real,
 
   PRIMARY KEY (order_id, product_id),
 
