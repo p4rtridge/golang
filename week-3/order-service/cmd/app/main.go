@@ -15,17 +15,17 @@ import (
 
 func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *redis.Client) {
 	// create businesses
-	authBiz := composer.ComposeAuthBusiness(cfg, pg, rd)
-	userBiz := composer.ComposeUserBusiness(pg)
-	productBiz := composer.ComposeProductBusiness(pg)
+	authUc := composer.ComposeAuthUsecase(cfg, pg, rd)
+	userUc := composer.ComposeUserUsecase(pg)
+	productUc := composer.ComposeProductUsecase(pg)
 
 	// create services
-	authAPIService := composer.ComposeAuthAPIService(authBiz)
-	userAPIService := composer.ComposeUserAPIService(userBiz)
-	productAPIService := composer.ComposeProductAPIService(productBiz)
+	authAPIService := composer.ComposeAuthAPIService(authUc)
+	userAPIService := composer.ComposeUserAPIService(userUc)
+	productAPIService := composer.ComposeProductAPIService(productUc)
 
 	// create middlewares
-	authMiddleware := middleware.RequireAuth(authBiz)
+	authMiddleware := middleware.RequireAuth(authUc)
 
 	// prepare routes
 	// /auth

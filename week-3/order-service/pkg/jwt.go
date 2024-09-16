@@ -8,6 +8,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type JWT interface {
+	IssueAccessToken(ctx context.Context, id, sub string) (string, int, error)
+	IssueRefreshToken(ctx context.Context, id, sub string) (string, int, error)
+	ParseToken(ctx context.Context, tokenStr string) (*jwt.RegisteredClaims, error)
+}
+
 type jwtx struct {
 	secret_key    []byte
 	atExpireInSec int

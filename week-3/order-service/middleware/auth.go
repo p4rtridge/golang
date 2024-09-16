@@ -4,23 +4,20 @@ import (
 	"context"
 	"order_service/internal/core"
 	"order_service/pkg"
-	"order_service/services/auth/controller/api"
+	authUc "order_service/services/auth/usecase"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func RequireAuth(biz api.AuthUseCase) func(*fiber.Ctx) error {
+func RequireAuth(biz authUc.AuthUseCase) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		token, err := extractTokenFromCookie(c.Cookies("authAccessToken"))
-		if err != nil && token == "" {
-			token, err = extractTokenFromHeaderString(c.Get("Authorization"))
-			if err != nil {
-				return pkg.WriteResponse(c, err)
-			}
+		token, err := extractTokenFromHeaderString(c.Get("Authorization"))
+		if err != nil {
+			return pkg.WriteResponse(c, err)
 		}
 
 		sub, tid, err := biz.Verify(ctx, token)
@@ -32,14 +29,6 @@ func RequireAuth(biz api.AuthUseCase) func(*fiber.Ctx) error {
 
 		return c.Next()
 	}
-}
-
-func extractTokenFromCookie(s string) (string, error) {
-	if len(s) == 0 {
-		return "", core.ErrUnauthorized.WithError("missing access token")
-	}
-
-	return s, nil
 }
 
 func extractTokenFromHeaderString(s string) (string, error) {

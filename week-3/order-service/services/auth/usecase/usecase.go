@@ -3,44 +3,31 @@ package usecase
 import (
 	"context"
 	"order_service/internal/core"
+	"order_service/pkg"
 	authEntity "order_service/services/auth/entity"
-	userEntity "order_service/services/user/entity"
+	authRepo "order_service/services/auth/repository/postgres"
+	tokenRepo "order_service/services/auth/repository/redis"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-type AuthRepository interface {
-	AddAuth(ctx context.Context, data *authEntity.Auth) error
-	GetAuth(ctx context.Context, username string) (*userEntity.User, error)
-}
-
-type TokenRepository interface {
-	SetRefreshToken(ctx context.Context, userID int, deviceID, token string, expiration int) error
-	GetRefreshToken(ctx context.Context, userID int, deviceID string) (string, error)
-	DeleteRefreshToken(ctx context.Context, userID int, deviceID string) error
-	DeleteAllRefreshToken(ctx context.Context, userID int) error
-}
-
-type Hasher interface {
-	HashPassword(password string) (string, error)
-	CompareHash(hashedPassword, password string) (bool, error)
-}
-
-type JWT interface {
-	IssueAccessToken(ctx context.Context, id, sub string) (string, int, error)
-	IssueRefreshToken(ctx context.Context, id, sub string) (string, int, error)
-	ParseToken(ctx context.Context, tokenStr string) (*jwt.RegisteredClaims, error)
+type AuthUseCase interface {
+	Register(ctx context.Context, data *authEntity.AuthUsernamePassword) error
+	Login(ctx context.Context, data *authEntity.AuthLogin) (*authEntity.TokenResponse, error)
+	Verify(ctx context.Context, token string) (string, string, error)
+	Refresh(ctx context.Context, data *authEntity.RefreshTokenRequest) (*authEntity.TokenResponse, error)
+	SignOut(ctx context.Context, data *authEntity.AuthSignOut) error
+	SignOutAll(ctx context.Context) error
 }
 
 type authUsecase struct {
-	repo      AuthRepository
-	tokenRepo TokenRepository
-	hasher    Hasher
-	jwt       JWT
+	repo      authRepo.AuthRepository
+	tokenRepo tokenRepo.TokenRepository
+	hasher    pkg.Hasher
+	jwt       pkg.JWT
 }
 
-func NewUsecase(repo AuthRepository, tokenRepo TokenRepository, hasher Hasher, jwt JWT) *authUsecase {
+func NewUsecase(repo authRepo.AuthRepository, tokenRepo tokenRepo.TokenRepository, hasher pkg.Hasher, jwt pkg.JWT) AuthUseCase {
 	return &authUsecase{
 		repo,
 		tokenRepo,

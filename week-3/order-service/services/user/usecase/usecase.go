@@ -4,19 +4,21 @@ import (
 	"context"
 	"order_service/internal/core"
 	"order_service/services/user/entity"
+	userRepo "order_service/services/user/repository/postgres"
 )
 
-type UserRepository interface {
+type UserUsecase interface {
 	GetUsers(ctx context.Context) (*[]entity.User, error)
-	GetUserById(ctx context.Context, userId int) (*entity.User, error)
-	AddUserBalanceById(ctx context.Context, userId int, balance float32) error
+	GetUser(ctx context.Context, userID int) (*entity.User, error)
+	GetUserProfile(ctx context.Context) (*entity.User, error)
+	AddUserBalance(ctx context.Context, data *entity.UserRequest) error
 }
 
 type userUsecase struct {
-	repo UserRepository
+	repo userRepo.UserRepository
 }
 
-func NewUsecase(repo UserRepository) *userUsecase {
+func NewUsecase(repo userRepo.UserRepository) UserUsecase {
 	return &userUsecase{
 		repo,
 	}

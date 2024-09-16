@@ -9,11 +9,18 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type TokenRepository interface {
+	SetRefreshToken(ctx context.Context, userID int, deviceID, token string, expiration int) error
+	GetRefreshToken(ctx context.Context, userID int, deviceID string) (string, error)
+	DeleteRefreshToken(ctx context.Context, userID int, deviceID string) error
+	DeleteAllRefreshToken(ctx context.Context, userID int) error
+}
+
 type redisRepo struct {
 	db *redis.Client
 }
 
-func NewRedisRepo(db *redis.Client) *redisRepo {
+func NewTokenRepo(db *redis.Client) TokenRepository {
 	return &redisRepo{
 		db,
 	}

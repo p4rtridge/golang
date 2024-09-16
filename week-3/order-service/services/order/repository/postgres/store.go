@@ -18,4 +18,5 @@ func NewPostgresRepo(db *pgxpool.Pool) *postgresRepo {
 }
 
 func (repo *postgresRepo) CreateOrder(ctx context.Context, data *entity.Order) error {
+	return nil
 }

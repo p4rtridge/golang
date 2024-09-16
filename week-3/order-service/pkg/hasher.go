@@ -11,7 +11,12 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-type Hasher struct {
+type Hasher interface {
+	HashPassword(password string) (string, error)
+	CompareHash(hashedPassword, password string) (bool, error)
+}
+
+type hasher struct {
 	memory      uint32
 	iterations  uint32
 	parallelism uint8
@@ -24,8 +29,8 @@ var (
 	ErrIncompatibleVersion = errors.New("incompatible version of argon2")
 )
 
-func NewHasher(memory, iterations, saltLength, keyLength uint32, parallelism uint8) *Hasher {
-	return &Hasher{
+func NewHasher(memory, iterations, saltLength, keyLength uint32, parallelism uint8) *hasher {
+	return &hasher{
 		memory,
 		iterations,
 		parallelism,
@@ -34,7 +39,7 @@ func NewHasher(memory, iterations, saltLength, keyLength uint32, parallelism uin
 	}
 }
 
-func (r *Hasher) RandomBytes() ([]byte, error) {
+func (r *hasher) RandomBytes() ([]byte, error) {
 	salt := make([]byte, r.saltLength)
 
 	_, err := rand.Read(salt)
@@ -45,14 +50,14 @@ func (r *Hasher) RandomBytes() ([]byte, error) {
 	return salt, nil
 }
 
-func (r *Hasher) EncodeHash(password, salt []byte) string {
+func (r *hasher) EncodeHash(password, salt []byte) string {
 	b64Salt := base64.RawStdEncoding.EncodeToString(salt)
 	b64Hash := base64.RawStdEncoding.EncodeToString(password)
 
 	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s", argon2.Version, r.memory, r.iterations, r.parallelism, b64Salt, b64Hash)
 }
 
-func (r *Hasher) DecodeHash(encodedHash string) (*Hasher, []byte, []byte, error) {
+func (r *hasher) DecodeHash(encodedHash string) (*hasher, []byte, []byte, error) {
 	vals := strings.Split(encodedHash, "$")
 	if len(vals) != 6 {
 		return nil, nil, nil, ErrInvalidHash
@@ -67,7 +72,7 @@ func (r *Hasher) DecodeHash(encodedHash string) (*Hasher, []byte, []byte, error)
 		return nil, nil, nil, ErrIncompatibleVersion
 	}
 
-	var p Hasher
+	var p hasher
 
 	_, err = fmt.Sscanf(vals[3], "m=%d,t=%d,p=%d", &p.memory, &p.iterations, &p.parallelism)
 	if err != nil {
@@ -89,7 +94,7 @@ func (r *Hasher) DecodeHash(encodedHash string) (*Hasher, []byte, []byte, error)
 	return &p, salt, hash, nil
 }
 
-func (r *Hasher) HashPassword(password string) (string, error) {
+func (r *hasher) HashPassword(password string) (string, error) {
 	salt, err := r.RandomBytes()
 	if err != nil {
 		return "", err
@@ -100,7 +105,7 @@ func (r *Hasher) HashPassword(password string) (string, error) {
 	return r.EncodeHash(hashed, salt), nil
 }
 
-func (r *Hasher) CompareHash(hashedPassword, password string) (bool, error) {
+func (r *hasher) CompareHash(hashedPassword, password string) (bool, error) {
 	p, salt, hash, err := r.DecodeHash(hashedPassword)
 	if err != nil {
 		return false, err

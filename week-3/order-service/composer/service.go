@@ -1,50 +1,28 @@
 package composer
 
 import (
-	authAPI "order_service/services/auth/controller/api"
-	productAPI "order_service/services/product/controller/api"
-	userAPI "order_service/services/user/controller/api"
-
-	"github.com/gofiber/fiber/v2"
+	authSrv "order_service/services/auth/controller/api"
+	authUc "order_service/services/auth/usecase"
+	productSrv "order_service/services/product/controller/api"
+	productUc "order_service/services/product/usecase"
+	userSrv "order_service/services/user/controller/api"
+	userUc "order_service/services/user/usecase"
 )
 
-type AuthService interface {
-	Register(*fiber.Ctx) error
-	Login(*fiber.Ctx) error
-	Refresh(*fiber.Ctx) error
-	SignOut(*fiber.Ctx) error
-	SignOutAll(*fiber.Ctx) error
-}
-
-type UserService interface {
-	GetUsers(*fiber.Ctx) error
-	GetUser(*fiber.Ctx) error
-	GetUserProfile(*fiber.Ctx) error
-	AddUserBalance(*fiber.Ctx) error
-}
-
-type ProductService interface {
-	CreateProduct(*fiber.Ctx) error
-	GetProducts(*fiber.Ctx) error
-	GetProduct(*fiber.Ctx) error
-	UpdateProduct(*fiber.Ctx) error
-	DeleteProduct(*fiber.Ctx) error
-}
-
-func ComposeAuthAPIService(biz authAPI.AuthUseCase) AuthService {
-	serviceAPI := authAPI.NewAPI(biz)
+func ComposeAuthAPIService(biz authUc.AuthUseCase) authSrv.AuthService {
+	serviceAPI := authSrv.NewService(biz)
 
 	return serviceAPI
 }
 
-func ComposeUserAPIService(biz userAPI.UserUsecase) UserService {
-	serviceAPI := userAPI.NewAPI(biz)
+func ComposeUserAPIService(biz userUc.UserUsecase) userSrv.UserService {
+	serviceAPI := userSrv.NewService(biz)
 
 	return serviceAPI
 }
 
-func ComposeProductAPIService(biz productAPI.ProductUsecase) ProductService {
-	serviceAPI := productAPI.NewAPI(biz)
+func ComposeProductAPIService(biz productUc.ProductUsecase) productSrv.ProductService {
+	serviceAPI := productSrv.NewService(biz)
 
 	return serviceAPI
 }

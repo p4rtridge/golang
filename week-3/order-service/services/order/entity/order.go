@@ -11,14 +11,6 @@ type Order struct {
 	Items      []Item     `json:"items"`
 }
 
-type Item struct {
-	OrderId      int     `json:"order_id"`
-	ProductId    int     `json:"product_id"`
-	ProductName  string  `json:"product_name"`
-	ProductPrice float32 `json:"product_price"`
-	Quantity     int     `json:"quantity"`
-}
-
 func NewOrder(id, userId int, totalPrice float32, items []Item) Order {
 	return Order{
 		Id:         id,
@@ -26,6 +18,17 @@ func NewOrder(id, userId int, totalPrice float32, items []Item) Order {
 		TotalPrice: totalPrice,
 		CreatedAt:  time.Now(),
 	}
+}
+
+func (order *Order) CalculateTotalPrice() {
+}
+
+type Item struct {
+	OrderId      int     `json:"order_id"`
+	ProductId    int     `json:"product_id"`
+	ProductName  string  `json:"product_name"`
+	ProductPrice float32 `json:"product_price"`
+	Quantity     int     `json:"quantity"`
 }
 
 func NewItem(orderId, productId int, productName string, productPrice float32, quantity int) Item {

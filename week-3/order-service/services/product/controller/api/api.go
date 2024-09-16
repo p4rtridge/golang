@@ -1,43 +1,40 @@
 package api
 
 import (
-	"context"
 	"order_service/internal/core"
 	"order_service/pkg"
 	"order_service/services/product/entity"
+	productUc "order_service/services/product/usecase"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-type ProductUsecase interface {
-	CreateProduct(ctx context.Context, data *entity.ProductRequest) error
-	GetProducts(ctx context.Context) (*[]entity.Product, error)
-	GetProduct(ctx context.Context, productID int) (*entity.Product, error)
-	UpdateProduct(ctx context.Context, productID int, data *entity.ProductRequest) error
-	DeleteProduct(ctx context.Context, productID int) error
+type ProductService interface {
+	CreateProduct(*fiber.Ctx) error
+	GetProducts(*fiber.Ctx) error
+	GetProduct(*fiber.Ctx) error
+	UpdateProduct(*fiber.Ctx) error
+	DeleteProduct(*fiber.Ctx) error
 }
 
-type api struct {
-	usecase ProductUsecase
+type service struct {
+	usecase productUc.ProductUsecase
 }
 
-func NewAPI(uc ProductUsecase) *api {
-	return &api{
+func NewService(uc productUc.ProductUsecase) ProductService {
+	return &service{
 		usecase: uc,
 	}
 }
 
-func (api *api) CreateProduct(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) CreateProduct(c *fiber.Ctx) error {
 	var data entity.ProductRequest
 
 	if err := c.BodyParser(&data); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err := api.usecase.CreateProduct(ctx, &data)
+	err := srv.usecase.CreateProduct(c.Context(), &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -45,11 +42,8 @@ func (api *api) CreateProduct(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(core.ResponseData(true))
 }
 
-func (api *api) GetProducts(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	products, err := api.usecase.GetProducts(ctx)
+func (srv *service) GetProducts(c *fiber.Ctx) error {
+	products, err := srv.usecase.GetProducts(c.Context())
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -57,16 +51,13 @@ func (api *api) GetProducts(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(core.ResponseData(products))
 }
 
-func (api *api) GetProduct(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) GetProduct(c *fiber.Ctx) error {
 	targetId, err := c.ParamsInt("productID")
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	product, err := api.usecase.GetProduct(ctx, targetId)
+	product, err := srv.usecase.GetProduct(c.Context(), targetId)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -74,10 +65,7 @@ func (api *api) GetProduct(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(core.ResponseData(product))
 }
 
-func (api *api) UpdateProduct(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) UpdateProduct(c *fiber.Ctx) error {
 	targetId, err := c.ParamsInt("productID")
 	if err != nil {
 		return pkg.WriteResponse(c, err)
@@ -89,7 +77,7 @@ func (api *api) UpdateProduct(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err = api.usecase.UpdateProduct(ctx, targetId, &data)
+	err = srv.usecase.UpdateProduct(c.Context(), targetId, &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -97,16 +85,13 @@ func (api *api) UpdateProduct(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(core.ResponseData(true))
 }
 
-func (api *api) DeleteProduct(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) DeleteProduct(c *fiber.Ctx) error {
 	targetId, err := c.ParamsInt("productID")
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err = api.usecase.DeleteProduct(ctx, targetId)
+	err = srv.usecase.DeleteProduct(c.Context(), targetId)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

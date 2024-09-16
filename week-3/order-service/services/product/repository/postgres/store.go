@@ -12,6 +12,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type ProductRepository interface {
+	CreateProduct(ctx context.Context, data *entity.Product) error
+	GetProducts(ctx context.Context) (*[]entity.Product, error)
+	GetProduct(ctx context.Context, productID int) (*entity.Product, error)
+	UpdateProduct(ctx context.Context, productID int, data *entity.Product) error
+	DeleteProduct(ctx context.Context, productID int) error
+}
+
 var (
 	QUERY_INSERT_PRODUCT       = "INSERT INTO products (name, quantity, price) VALUES ($1, $2, $3)"
 	QUERY_GET_PRODUCTS         = "SELECT * FROM products"
@@ -24,7 +32,7 @@ type postgresRepo struct {
 	db *pgxpool.Pool
 }
 
-func NewPostgresRepo(db *pgxpool.Pool) *postgresRepo {
+func NewProductRepo(db *pgxpool.Pool) ProductRepository {
 	return &postgresRepo{
 		db,
 	}

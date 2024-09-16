@@ -4,21 +4,22 @@ import (
 	"context"
 	"order_service/internal/core"
 	"order_service/services/product/entity"
+	productRepo "order_service/services/product/repository/postgres"
 )
 
-type ProductRepository interface {
-	CreateProduct(ctx context.Context, data *entity.Product) error
+type ProductUsecase interface {
+	CreateProduct(ctx context.Context, data *entity.ProductRequest) error
 	GetProducts(ctx context.Context) (*[]entity.Product, error)
 	GetProduct(ctx context.Context, productID int) (*entity.Product, error)
-	UpdateProduct(ctx context.Context, productID int, data *entity.Product) error
+	UpdateProduct(ctx context.Context, productID int, data *entity.ProductRequest) error
 	DeleteProduct(ctx context.Context, productID int) error
 }
 
 type productUsecase struct {
-	repo ProductRepository
+	repo productRepo.ProductRepository
 }
 
-func NewUsecase(repo ProductRepository) *productUsecase {
+func NewUsecase(repo productRepo.ProductRepository) ProductUsecase {
 	return &productUsecase{
 		repo,
 	}

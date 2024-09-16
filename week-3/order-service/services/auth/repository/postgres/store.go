@@ -4,11 +4,16 @@ import (
 	"context"
 	"order_service/internal/core"
 	authEntity "order_service/services/auth/entity"
-	"order_service/services/user/entity"
+	userEntity "order_service/services/user/entity"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type AuthRepository interface {
+	AddAuth(ctx context.Context, data *authEntity.Auth) error
+	GetAuth(ctx context.Context, username string) (*userEntity.User, error)
+}
 
 var (
 	QUERY_GET_USER_BY_USERNAME = "SELECT * FROM users WHERE username = $1"
@@ -19,14 +24,14 @@ type postgresRepo struct {
 	db *pgxpool.Pool
 }
 
-func NewPostgresRepo(db *pgxpool.Pool) *postgresRepo {
+func NewAuthRepo(db *pgxpool.Pool) AuthRepository {
 	return &postgresRepo{
 		db,
 	}
 }
 
-func (repo *postgresRepo) GetAuth(ctx context.Context, username string) (*entity.User, error) {
-	var data entity.User
+func (repo *postgresRepo) GetAuth(ctx context.Context, username string) (*userEntity.User, error) {
+	var data userEntity.User
 
 	err := repo.db.QueryRow(ctx, QUERY_GET_USER_BY_USERNAME, username).Scan(&data.Id, &data.Username, &data.Password, &data.Balance, &data.CreatedAt, &data.UpdatedAt)
 	if err != nil {

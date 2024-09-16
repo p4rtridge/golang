@@ -1,44 +1,40 @@
 package api
 
 import (
-	"context"
 	"order_service/internal/core"
 	"order_service/pkg"
 	"order_service/services/auth/entity"
+	authUc "order_service/services/auth/usecase"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-type AuthUseCase interface {
-	Register(ctx context.Context, data *entity.AuthUsernamePassword) error
-	Login(ctx context.Context, data *entity.AuthLogin) (*entity.TokenResponse, error)
-	Verify(ctx context.Context, token string) (string, string, error)
-	Refresh(ctx context.Context, data *entity.RefreshTokenRequest) (*entity.TokenResponse, error)
-	SignOut(ctx context.Context, data *entity.AuthSignOut) error
-	SignOutAll(ctx context.Context) error
+type AuthService interface {
+	Register(*fiber.Ctx) error
+	Login(*fiber.Ctx) error
+	Refresh(*fiber.Ctx) error
+	SignOut(*fiber.Ctx) error
+	SignOutAll(*fiber.Ctx) error
 }
 
-type api struct {
-	usecase AuthUseCase
+type service struct {
+	usecase authUc.AuthUseCase
 }
 
-func NewAPI(uc AuthUseCase) *api {
-	return &api{
+func NewService(uc authUc.AuthUseCase) AuthService {
+	return &service{
 		usecase: uc,
 	}
 }
 
-func (api *api) Register(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) Register(c *fiber.Ctx) error {
 	var data entity.AuthUsernamePassword
 
 	if err := c.BodyParser(&data); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err := api.usecase.Register(ctx, &data)
+	err := srv.usecase.Register(c.Context(), &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -46,17 +42,14 @@ func (api *api) Register(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(core.ResponseData(true))
 }
 
-func (api *api) Login(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) Login(c *fiber.Ctx) error {
 	var data entity.AuthLogin
 
 	if err := c.BodyParser(&data); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	response, err := api.usecase.Login(ctx, &data)
+	response, err := srv.usecase.Login(c.Context(), &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -64,17 +57,14 @@ func (api *api) Login(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(core.ResponseData(response))
 }
 
-func (api *api) Refresh(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) Refresh(c *fiber.Ctx) error {
 	var data entity.RefreshTokenRequest
 
 	if err := c.BodyParser(&data); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	response, err := api.usecase.Refresh(ctx, &data)
+	response, err := srv.usecase.Refresh(c.Context(), &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -82,15 +72,12 @@ func (api *api) Refresh(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(core.ResponseData(response))
 }
 
-func (api *api) SignOut(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) SignOut(c *fiber.Ctx) error {
 	requester, ok := c.Locals(core.KeyRequester).(core.Requester)
 	if !ok {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
-	ctx = core.ContextWithRequester(ctx, requester)
+	ctx := core.ContextWithRequester(c.Context(), requester)
 
 	var data entity.AuthSignOut
 
@@ -98,7 +85,7 @@ func (api *api) SignOut(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err := api.usecase.SignOut(ctx, &data)
+	err := srv.usecase.SignOut(ctx, &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -106,17 +93,14 @@ func (api *api) SignOut(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusNoContent).JSON(core.ResponseData(true))
 }
 
-func (api *api) SignOutAll(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func (srv *service) SignOutAll(c *fiber.Ctx) error {
 	requester, ok := c.Locals(core.KeyRequester).(core.Requester)
 	if !ok {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
-	ctx = core.ContextWithRequester(ctx, requester)
+	ctx := core.ContextWithRequester(c.Context(), requester)
 
-	err := api.usecase.SignOutAll(ctx)
+	err := srv.usecase.SignOutAll(ctx)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

@@ -10,6 +10,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type UserRepository interface {
+	GetUsers(ctx context.Context) (*[]entity.User, error)
+	GetUserById(ctx context.Context, userId int) (*entity.User, error)
+	AddUserBalanceById(ctx context.Context, userId int, balance float32) error
+}
+
 var (
 	QUERY_GET_USER_BY_ID            = "SELECT * FROM users WHERE id = $1"
 	QUERY_GET_USERS                 = "SELECT * FROM users"
@@ -20,7 +26,7 @@ type postgresRepo struct {
 	db *pgxpool.Pool
 }
 
-func NewPostgresRepo(db *pgxpool.Pool) *postgresRepo {
+func NewUserRepo(db *pgxpool.Pool) UserRepository {
 	return &postgresRepo{
 		db,
 	}
