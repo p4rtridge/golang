@@ -4,20 +4,13 @@ import "time"
 
 type OrderStatus string
 
-const (
-	PENDING  OrderStatus = "pending"
-	DONE     OrderStatus = "done"
-	CANCELED OrderStatus = "canceled"
-)
-
 type Order struct {
-	Id         int         `json:"id"`
-	UserId     int         `json:"user_id"`
-	TotalPrice float32     `json:"total_price"`
 	CreatedAt  time.Time   `json:"created_at"`
 	UpdatedAt  *time.Time  `json:"updated_at"`
 	Items      []OrderItem `json:"items"`
-	Status     OrderStatus `json:"order_status"`
+	Id         int         `json:"id"`
+	UserId     int         `json:"user_id"`
+	TotalPrice float32     `json:"total_price"`
 }
 
 func NewOrder(id, userId int, totalPrice float32, items []OrderItem) Order {
@@ -34,24 +27,16 @@ func (order *Order) SetId(id int) {
 	order.Id = id
 }
 
-func (order *Order) CalculatePrice() float32 {
-	totalPrice := float32(0.0)
-
-	for _, item := range order.Items {
-		totalPrice += float32(item.Quantity) * item.ProductPrice
-	}
-
-	order.TotalPrice = totalPrice
-
-	return totalPrice
+func (order *Order) SetTotalPrice(price float32) {
+	order.TotalPrice = price
 }
 
 type OrderItem struct {
+	ProductName  string  `json:"product_name"`
 	OrderId      int     `json:"order_id"`
 	ProductId    int     `json:"product_id"`
-	ProductName  string  `json:"product_name"`
-	ProductPrice float32 `json:"product_price"`
 	Quantity     int     `json:"quantity"`
+	ProductPrice float32 `json:"product_price"`
 }
 
 func NewOrderItem(orderId, productId int, productName string, productPrice float32, quantity int) OrderItem {
@@ -66,4 +51,16 @@ func NewOrderItem(orderId, productId int, productName string, productPrice float
 
 func (item *OrderItem) SetOrderId(id int) {
 	item.OrderId = id
+}
+
+func (item *OrderItem) SetProductId(productId int) {
+	item.ProductId = productId
+}
+
+func (item *OrderItem) SetProductName(productName string) {
+	item.ProductName = productName
+}
+
+func (item *OrderItem) SetProductPrice(productPrice float32) {
+	item.ProductPrice = productPrice
 }

@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS orders (
   total_price     real          DEFAULT 0.0,
   created_at      timestamp     DEFAULT NOW(),
   updated_at      timestamp,
-  status          order_status  NOT NULL DEFAULT 'pending',
 
   PRIMARY KEY (id)
 );
@@ -44,4 +43,4 @@ CREATE TABLE IF NOT EXISTS order_items (
   CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
-CREATE TYPE order_status AS ENUM ('pending', 'done', 'canceled');
+--CREATE TYPE order_status AS ENUM ('pending', 'done', 'canceled');

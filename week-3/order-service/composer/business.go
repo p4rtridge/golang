@@ -41,8 +41,6 @@ func ComposeProductUsecase(db *pgxpool.Pool) productUsecase.ProductUsecase {
 
 func ComposeOrderUsecase(db *pgxpool.Pool) orderUsecase.OrderUsecase {
 	repo := orderPGRepo.NewOrderRepo(db)
-	userRepo := userPGRepo.NewUserRepo(db)
-	productRepo := productPGRepo.NewProductRepo(db)
 
-	return orderUsecase.NewUsecase(repo, userRepo, productRepo)
+	return orderUsecase.NewUsecase(repo)
 }

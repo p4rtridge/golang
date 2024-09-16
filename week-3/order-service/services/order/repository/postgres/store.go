@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	orderEntity "order_service/services/order/entity"
 	productEntity "order_service/services/product/entity"
 	userEntity "order_service/services/user/entity"
@@ -12,18 +13,18 @@ import (
 )
 
 type OrderRepository interface {
-	CreateOrder(ctx context.Context, data *orderEntity.Order, userData *userEntity.User) (*orderEntity.Order, error)
-	ProcessOrderUpdates(ctx context.Context, data *orderEntity.Order, userData *userEntity.User, productData *[]productEntity.Product) error
+	CreateOrder(ctx context.Context, order *orderEntity.Order, callbackFn func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error)) error
 	GetOrders(ctx context.Context) (*[]orderEntity.Order, error)
 }
 
 const (
-	QUERY_INSERT_ORDER            = "INSERT INTO orders (user_id, total_price) VALUES ($1, $2) RETURNING id"
-	QUERY_INSERT_ORDER_ITEM       = "INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity) VALUES ($1, $2, $3, $4, $5)"
-	QUERY_UPDATE_USER_BALANCE     = "UPDATE users SET balance = COALESCE($2, balance) WHERE id = $1"
-	QUERY_UPDATE_PRODUCT_QUANTITY = "UPDATE products SET quantity = COALESCE($2, quantity) WHERE id = $1"
-	QUERY_GET_ORDERS              = "SELECT o.id AS order_id, o.user_id, o.status, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id"
-	QUERY_UPDATE_ORDER_STATUS     = "UPDATE orders SET status = $2 WHERE id = $1"
+	QUERY_GET_ORDERS                  = "SELECT o.id AS order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id"
+	QUERY_GET_USER_LOCK               = "SELECT * FROM users WHERE id = $1 FOR UPDATE"
+	QUERY_GET_PRODUCT_LOCK            = "SELECT * FROM products WHERE id = $1 FOR UPDATE"
+	QUERY_CREATE_ORDER_WITH_RETURN_ID = "INSERT INTO orders (user_id, total_price) VALUES ($1, $2) RETURNING id"
+	QUERY_CREATE_ORDER_ITEM           = "INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity) VALUES ($1, $2, $3, $4, $5)"
+	QUERY_UPDATE_USER_BALANCE         = "UPDATE users SET balance = COALESCE($2, balance) WHERE id = $1"
+	QUERY_UPDATE_PRODUCT_QUANTITY     = "UPDATE products SET quantity = COALESCE($2, quantity) WHERE id = $1"
 )
 
 type postgresRepo struct {
@@ -36,71 +37,62 @@ func NewOrderRepo(db *pgxpool.Pool) OrderRepository {
 	}
 }
 
-func (repo *postgresRepo) CreateOrder(ctx context.Context, data *orderEntity.Order, userData *userEntity.User) (*orderEntity.Order, error) {
-	tx, err := repo.db.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx)
-		} else {
-			tx.Commit(ctx)
-		}
-	}()
+func (repo *postgresRepo) CreateOrder(ctx context.Context, order *orderEntity.Order, callbackFn func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error)) error {
+	return runInTransaction(ctx, repo.db, func(tx pgx.Tx) error {
+		var user userEntity.User
 
-	var newOrderId int
-	err = tx.QueryRow(ctx, QUERY_INSERT_ORDER, userData.Id, data.TotalPrice).Scan(&newOrderId)
-	if err != nil {
-		return nil, err
-	}
-
-	data.SetId(newOrderId)
-
-	for _, item := range data.Items {
-		_, err = tx.Exec(ctx, QUERY_INSERT_ORDER_ITEM, newOrderId, item.ProductId, item.ProductName, item.ProductPrice, item.Quantity)
-		if err != nil {
-			return data, err
-		}
-
-		item.SetOrderId(newOrderId)
-	}
-
-	return data, nil
-}
-
-func (repo *postgresRepo) ProcessOrderUpdates(ctx context.Context, data *orderEntity.Order, userData *userEntity.User, productData *[]productEntity.Product) error {
-	tx, err := repo.db.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx)
-			repo.db.Exec(ctx, QUERY_UPDATE_ORDER_STATUS, data.Id, orderEntity.CANCELED)
-		} else {
-			tx.Commit(ctx)
-		}
-	}()
-
-	for _, item := range *productData {
-		_, err = tx.Exec(ctx, QUERY_UPDATE_PRODUCT_QUANTITY, item.Id, item.Quantity)
+		err := tx.QueryRow(ctx, QUERY_GET_USER_LOCK, order.UserId).Scan(&user.Id, &user.Username, &user.Password, &user.Balance, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return err
 		}
-	}
 
-	_, err = tx.Exec(ctx, QUERY_UPDATE_USER_BALANCE, userData.Id, userData.Balance)
-	if err != nil {
-		return err
-	}
+		products := make([]productEntity.Product, 0, len(order.Items))
+		for _, item := range order.Items {
+			var product productEntity.Product
 
-	_, err = tx.Exec(ctx, QUERY_UPDATE_ORDER_STATUS, data.Id, orderEntity.DONE)
-	if err != nil {
-		return err
-	}
+			err := tx.QueryRow(ctx, QUERY_GET_PRODUCT_LOCK, item.ProductId).Scan(&product.Id, &product.Name, &product.Quantity, &product.Price, &product.CreatedAt, &product.UpdatedAt)
+			if err != nil {
+				return err
+			}
 
-	return nil
+			products = append(products, product)
+		}
+
+		accept, err := callbackFn(order, &user, &products)
+		if err != nil {
+			return err
+		}
+		if !accept {
+			return nil
+		}
+
+		var newOrderId int
+
+		err = tx.QueryRow(ctx, QUERY_CREATE_ORDER_WITH_RETURN_ID, order.UserId, order.TotalPrice).Scan(&newOrderId)
+		if err != nil {
+			return err
+		}
+		order.SetId(newOrderId)
+
+		for idx, item := range order.Items {
+			_, err = tx.Exec(ctx, QUERY_CREATE_ORDER_ITEM, order.Id, item.ProductId, item.ProductName, item.ProductPrice, item.Quantity)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Exec(ctx, QUERY_UPDATE_PRODUCT_QUANTITY, products[idx].Id, products[idx].Quantity)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = tx.Exec(ctx, QUERY_UPDATE_USER_BALANCE, user.Id, user.Balance)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (repo *postgresRepo) GetOrders(ctx context.Context) (*[]orderEntity.Order, error) {
@@ -118,9 +110,8 @@ func (repo *postgresRepo) GetOrders(ctx context.Context) (*[]orderEntity.Order, 
 		var productPrice, totalPrice float32
 		var createdAt time.Time
 		var updatedAt *time.Time
-		var status string
 
-		err := rows.Scan(&orderId, &userId, &status, &productId, &productName, &productPrice, &quantity, &totalPrice, &createdAt, &updatedAt)
+		err := rows.Scan(&orderId, &userId, &productId, &productName, &productPrice, &quantity, &totalPrice, &createdAt, &updatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +123,6 @@ func (repo *postgresRepo) GetOrders(ctx context.Context) (*[]orderEntity.Order, 
 				Id:         orderId,
 				UserId:     userId,
 				TotalPrice: totalPrice,
-				Status:     orderEntity.OrderStatus(status),
 				Items:      []orderEntity.OrderItem{item},
 			}
 		} else {
@@ -147,4 +137,24 @@ func (repo *postgresRepo) GetOrders(ctx context.Context) (*[]orderEntity.Order, 
 	}
 
 	return &orders, nil
+}
+
+func runInTransaction(ctx context.Context, db *pgxpool.Pool, fn func(tx pgx.Tx) error) error {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = fn(tx)
+
+	if err == nil {
+		return tx.Commit(ctx)
+	}
+
+	rollbackErr := tx.Rollback(ctx)
+	if rollbackErr != nil {
+		return errors.Join(err, rollbackErr)
+	}
+
+	return err
 }

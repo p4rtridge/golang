@@ -22,6 +22,10 @@ func NewProduct(id int, name string, quantity int, price float32) Product {
 	}
 }
 
-func (product *Product) AddQuantity(q int) {
-	product.Quantity += q
+func (product *Product) SetId(id int) {
+	product.Id = id
+}
+
+func (product *Product) SetQuantity(q int) {
+	product.Quantity = q
 }
