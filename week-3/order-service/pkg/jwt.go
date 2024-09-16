@@ -20,7 +20,7 @@ type jwtx struct {
 	rtExpireInSec int
 }
 
-func NewJWT(secret_key string, atExpireInSec, rtExpireInSec int) *jwtx {
+func NewJWT(secret_key string, atExpireInSec, rtExpireInSec int) JWT {
 	return &jwtx{
 		secret_key:    []byte(secret_key),
 		atExpireInSec: atExpireInSec,

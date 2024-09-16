@@ -29,7 +29,7 @@ var (
 	ErrIncompatibleVersion = errors.New("incompatible version of argon2")
 )
 
-func NewHasher(memory, iterations, saltLength, keyLength uint32, parallelism uint8) *hasher {
+func NewHasher(memory, iterations, saltLength, keyLength uint32, parallelism uint8) Hasher {
 	return &hasher{
 		memory,
 		iterations,

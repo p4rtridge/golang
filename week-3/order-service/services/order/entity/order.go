@@ -20,9 +20,6 @@ func NewOrder(id, userId int, totalPrice float32, items []Item) Order {
 	}
 }
 
-func (order *Order) CalculateTotalPrice() {
-}
-
 type Item struct {
 	OrderId      int     `json:"order_id"`
 	ProductId    int     `json:"product_id"`

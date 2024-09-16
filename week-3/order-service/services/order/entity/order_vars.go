@@ -1,7 +1,12 @@
 package entity
 
+type Product struct {
+	ProductId int `json:"product_id"`
+	Quantity  int `json:"quantity"`
+}
+
 type OrderRequest struct {
-	Items []Item `json:"items"`
+	Items []Product `json:"items"`
 }
 
 func (data *OrderRequest) Validate() error {
