@@ -30,6 +30,10 @@ func NewOrder(id, userId int, totalPrice float32, items []OrderItem) Order {
 	}
 }
 
+func (order *Order) SetId(id int) {
+	order.Id = id
+}
+
 func (order *Order) CalculatePrice() float32 {
 	totalPrice := float32(0.0)
 
@@ -58,4 +62,8 @@ func NewOrderItem(orderId, productId int, productName string, productPrice float
 		ProductPrice: productPrice,
 		Quantity:     quantity,
 	}
+}
+
+func (item *OrderItem) SetOrderId(id int) {
+	item.OrderId = id
 }

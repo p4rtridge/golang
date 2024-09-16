@@ -76,7 +76,12 @@ func (uc *orderUsecase) CreateOrder(ctx context.Context, data *orderEntity.Order
 
 	user.AddBalance(-orderTotalPrice)
 
-	err = uc.repo.CreateOrder(ctx, &newOrder, user, &products)
+	order, err := uc.repo.CreateOrder(ctx, &newOrder, user)
+	if err != nil {
+		return core.ErrConfict.WithError(orderEntity.ErrCannotCreateOrder.Error()).WithDebug(err.Error())
+	}
+
+	err = uc.repo.ProcessOrderUpdates(ctx, order, user, &products)
 	if err != nil {
 		return core.ErrConfict.WithError(orderEntity.ErrCannotCreateOrder.Error()).WithDebug(err.Error())
 	}
