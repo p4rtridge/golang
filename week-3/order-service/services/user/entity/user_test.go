@@ -24,21 +24,39 @@ func TestNewUser(t *testing.T) {
 }
 
 func TestSetBalance(t *testing.T) {
+	// case non nil
 	expectedBalance := float32(10.0)
 
-	user := entity.NewUser(1, "partridge", "130703")
+	var user *entity.User = &entity.User{
+		Id:       1,
+		Username: "partridge",
+		Password: "130703",
+	}
 
 	user.SetBalance(expectedBalance)
 
 	if user.Balance != expectedBalance {
 		t.Errorf("expected %v, got %v", expectedBalance, user.Balance)
 	}
+
+	// case nil
+	user = nil
+
+	user.SetBalance(expectedBalance)
+
+	if user != nil && user.Balance == expectedBalance {
+		t.Errorf("expected %v, got %v", nil, user.Balance)
+	}
 }
 
 func TestGetId(t *testing.T) {
 	expectedId := 1
 
-	user := entity.NewUser(1, "partridge", "130703")
+	var user entity.User = entity.User{
+		Id:       expectedId,
+		Username: "partridge",
+		Password: "130703",
+	}
 
 	if user.GetId() != expectedId {
 		t.Errorf("expected %v, got %v", expectedId, user.GetId())
@@ -48,7 +66,11 @@ func TestGetId(t *testing.T) {
 func TestGetBalance(t *testing.T) {
 	expectedBalance := float32(10.0)
 
-	user := entity.NewUser(1, "partridge", "130703")
+	var user entity.User = entity.User{
+		Id:       1,
+		Username: "partridge",
+		Password: "130703",
+	}
 
 	user.SetBalance(expectedBalance)
 

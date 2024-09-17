@@ -21,9 +21,10 @@ func TestNewProduct(t *testing.T) {
 }
 
 func TestSetId(t *testing.T) {
+	// case non nil
 	expectedId := 1
 
-	product := entity.Product{
+	var product *entity.Product = &entity.Product{
 		Id:       0,
 		Name:     "your mom",
 		Quantity: 1,
@@ -35,12 +36,22 @@ func TestSetId(t *testing.T) {
 	if product.Id != expectedId {
 		t.Errorf("expected %v, got %v", expectedId, product.Id)
 	}
+
+	// case nil
+	product = nil
+
+	product.SetId(expectedId)
+
+	if product != nil && product.Id == expectedId {
+		t.Errorf("expected %v, got %v", nil, product.Id)
+	}
 }
 
 func TestSetQuantity(t *testing.T) {
+	// case non nil
 	expectedQuantity := 10
 
-	product := entity.Product{
+	var product *entity.Product = &entity.Product{
 		Id:       1,
 		Name:     "your mom",
 		Quantity: 1,
@@ -51,6 +62,15 @@ func TestSetQuantity(t *testing.T) {
 
 	if product.Quantity != expectedQuantity {
 		t.Errorf("expected %v, got %v", expectedQuantity, product.Quantity)
+	}
+
+	// case nil
+	product = nil
+
+	product.SetQuantity(expectedQuantity)
+
+	if product != nil && product.Quantity == expectedQuantity {
+		t.Errorf("expected %v, got %v", nil, product.Quantity)
 	}
 }
 

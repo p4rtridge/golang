@@ -19,7 +19,7 @@ run: build
 
 .PHONY: test-entity
 test-entity:
-	go test -count=1 ./services/$(SERVICE)/entity/...
+	go test -count=1 ./services/user/entity/... ./services/product/entity/... ./services/order/entity/...
 
 .PHONY: migrate
 migrate:
