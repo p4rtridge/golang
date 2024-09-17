@@ -17,6 +17,10 @@ build:
 run: build
 	./bin/application
 
+.PHONY: test-entity
+test-entity:
+	go test -count=1 ./services/$(SERVICE)/entity/...
+
 .PHONY: migrate
 migrate:
 	 go run ./migrations/migrate.go
