@@ -23,9 +23,25 @@ func NewProduct(id int, name string, quantity int, price float32) Product {
 }
 
 func (product *Product) SetId(id int) {
-	product.Id = id
+	if product != nil {
+		product.Id = id
+	}
 }
 
 func (product *Product) SetQuantity(q int) {
-	product.Quantity = q
+	if product != nil {
+		product.Quantity = q
+	}
+}
+
+func (product Product) GetName() string {
+	return product.Name
+}
+
+func (product Product) GetQuantity() int {
+	return product.Quantity
+}
+
+func (product Product) GetPrice() float32 {
+	return product.Price
 }

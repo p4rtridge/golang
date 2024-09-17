@@ -38,7 +38,7 @@ func (srv *service) CreateOrder(c *fiber.Ctx) error {
 
 	ctx := core.ContextWithRequester(c.Context(), requester)
 
-	err := srv.usecase.CreateOrder(ctx, &data)
+	err := srv.usecase.CreateOrder(ctx, data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

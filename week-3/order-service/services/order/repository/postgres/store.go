@@ -41,16 +41,18 @@ func (repo *postgresRepo) CreateOrder(ctx context.Context, order *orderEntity.Or
 	return runInTransaction(ctx, repo.db, func(tx pgx.Tx) error {
 		var user userEntity.User
 
-		err := tx.QueryRow(ctx, QUERY_GET_USER_LOCK, order.UserId).Scan(&user.Id, &user.Username, &user.Password, &user.Balance, &user.CreatedAt, &user.UpdatedAt)
+		err := tx.QueryRow(ctx, QUERY_GET_USER_LOCK, order.GetUserIdSafe()).Scan(&user.Id, &user.Username, &user.Password, &user.Balance, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return err
 		}
 
-		products := make([]productEntity.Product, 0, len(order.Items))
-		for _, item := range order.Items {
+		// fetch required datas
+		orderItems := order.GetItemsSafe()
+		products := make([]productEntity.Product, 0, len(orderItems))
+		for _, item := range orderItems {
 			var product productEntity.Product
 
-			err := tx.QueryRow(ctx, QUERY_GET_PRODUCT_LOCK, item.ProductId).Scan(&product.Id, &product.Name, &product.Quantity, &product.Price, &product.CreatedAt, &product.UpdatedAt)
+			err := tx.QueryRow(ctx, QUERY_GET_PRODUCT_LOCK, item.GetProductId()).Scan(&product.Id, &product.Name, &product.Quantity, &product.Price, &product.CreatedAt, &product.UpdatedAt)
 			if err != nil {
 				return err
 			}
@@ -58,6 +60,7 @@ func (repo *postgresRepo) CreateOrder(ctx context.Context, order *orderEntity.Or
 			products = append(products, product)
 		}
 
+		// run business logic
 		accept, err := callbackFn(order, &user, &products)
 		if err != nil {
 			return err
@@ -68,25 +71,31 @@ func (repo *postgresRepo) CreateOrder(ctx context.Context, order *orderEntity.Or
 
 		var newOrderId int
 
-		err = tx.QueryRow(ctx, QUERY_CREATE_ORDER_WITH_RETURN_ID, order.UserId, order.TotalPrice).Scan(&newOrderId)
+		err = tx.QueryRow(ctx, QUERY_CREATE_ORDER_WITH_RETURN_ID, order.GetUserIdSafe(), order.GetTotalPriceSafe()).Scan(&newOrderId)
 		if err != nil {
 			return err
 		}
 		order.SetId(newOrderId)
 
-		for idx, item := range order.Items {
-			_, err = tx.Exec(ctx, QUERY_CREATE_ORDER_ITEM, order.Id, item.ProductId, item.ProductName, item.ProductPrice, item.Quantity)
+		// handle product's stock and user's balance after ordered
+		orderItems = order.GetItemsSafe()
+		if len(orderItems) == 0 {
+			return orderEntity.ErrInvalidMemory
+		}
+
+		for idx, item := range orderItems {
+			_, err = tx.Exec(ctx, QUERY_CREATE_ORDER_ITEM, order.GetIdSafe(), item.GetProductId(), item.GetProductName(), item.GetProductPrice(), item.GetQuantity())
 			if err != nil {
 				return err
 			}
 
-			_, err = tx.Exec(ctx, QUERY_UPDATE_PRODUCT_QUANTITY, products[idx].Id, products[idx].Quantity)
+			_, err = tx.Exec(ctx, QUERY_UPDATE_PRODUCT_QUANTITY, products[idx].GetPrice(), products[idx].GetQuantity())
 			if err != nil {
 				return err
 			}
 		}
 
-		_, err = tx.Exec(ctx, QUERY_UPDATE_USER_BALANCE, user.Id, user.Balance)
+		_, err = tx.Exec(ctx, QUERY_UPDATE_USER_BALANCE, user.GetId(), user.GetBalance())
 		if err != nil {
 			return err
 		}

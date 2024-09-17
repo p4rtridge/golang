@@ -24,11 +24,55 @@ func NewOrder(id, userId int, totalPrice float32, items []OrderItem) Order {
 }
 
 func (order *Order) SetId(id int) {
-	order.Id = id
+	if order != nil {
+		order.Id = id
+	}
 }
 
 func (order *Order) SetTotalPrice(price float32) {
-	order.TotalPrice = price
+	if order != nil {
+		order.TotalPrice = price
+	}
+}
+
+func (order *Order) GetIdSafe() int {
+	if order != nil {
+		return order.Id
+	}
+
+	return 0
+}
+
+func (order *Order) GetUserIdSafe() int {
+	if order != nil {
+		return order.UserId
+	}
+
+	return 0
+}
+
+func (order *Order) GetTotalPriceSafe() float32 {
+	if order != nil {
+		return order.TotalPrice
+	}
+
+	return 0
+}
+
+func (order *Order) GetItemsSafe() []OrderItem {
+	if order != nil {
+		return order.Items
+	}
+
+	return []OrderItem{}
+}
+
+func (order *Order) GetItemSafe(idx int) *OrderItem {
+	if order != nil && idx >= 0 && idx < len(order.Items) {
+		return &order.Items[idx]
+	}
+
+	return nil
 }
 
 type OrderItem struct {
@@ -50,17 +94,41 @@ func NewOrderItem(orderId, productId int, productName string, productPrice float
 }
 
 func (item *OrderItem) SetOrderId(id int) {
-	item.OrderId = id
+	if item != nil {
+		item.OrderId = id
+	}
 }
 
 func (item *OrderItem) SetProductId(productId int) {
-	item.ProductId = productId
+	if item != nil {
+		item.ProductId = productId
+	}
 }
 
 func (item *OrderItem) SetProductName(productName string) {
-	item.ProductName = productName
+	if item != nil {
+		item.ProductName = productName
+	}
 }
 
 func (item *OrderItem) SetProductPrice(productPrice float32) {
-	item.ProductPrice = productPrice
+	if item != nil {
+		item.ProductPrice = productPrice
+	}
+}
+
+func (item OrderItem) GetProductId() int {
+	return item.ProductId
+}
+
+func (item OrderItem) GetQuantity() int {
+	return item.Quantity
+}
+
+func (item OrderItem) GetProductName() string {
+	return item.ProductName
+}
+
+func (item OrderItem) GetProductPrice() float32 {
+	return item.ProductPrice
 }

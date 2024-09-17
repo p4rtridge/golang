@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"order_service/internal/core"
 	orderEntity "order_service/services/order/entity"
 	orderRepo "order_service/services/order/repository/postgres"
@@ -11,7 +10,7 @@ import (
 )
 
 type OrderUsecase interface {
-	CreateOrder(ctx context.Context, data *orderEntity.OrderRequest) error
+	CreateOrder(ctx context.Context, data orderEntity.OrderRequest) error
 	GetOrders(ctx context.Context) (*[]orderEntity.Order, error)
 }
 
@@ -25,7 +24,7 @@ func NewUsecase(repo orderRepo.OrderRepository) OrderUsecase {
 	}
 }
 
-func (uc *orderUsecase) CreateOrder(ctx context.Context, data *orderEntity.OrderRequest) error {
+func (uc *orderUsecase) CreateOrder(ctx context.Context, data orderEntity.OrderRequest) error {
 	if err := data.Validate(); err != nil {
 		return core.ErrBadRequest.WithError(orderEntity.ErrItemEmpty.Error())
 	}
@@ -38,9 +37,11 @@ func (uc *orderUsecase) CreateOrder(ctx context.Context, data *orderEntity.Order
 	}
 	requesterId := int(uid.GetLocalID())
 
-	newItems := make([]orderEntity.OrderItem, 0, len(data.Items))
-	for _, reqItem := range data.Items {
-		newItem := orderEntity.NewOrderItem(0, reqItem.ProductId, "", 0.0, reqItem.Quantity)
+	dataItems := data.GetItems()
+	newItems := make([]orderEntity.OrderItem, 0, len(dataItems))
+
+	for _, reqItem := range dataItems {
+		newItem := orderEntity.NewOrderItem(0, reqItem.GetItemId(), "", 0.0, reqItem.GetItemQuantity())
 
 		newItems = append(newItems, newItem)
 	}
@@ -48,28 +49,46 @@ func (uc *orderUsecase) CreateOrder(ctx context.Context, data *orderEntity.Order
 	newOrder := orderEntity.NewOrder(0, requesterId, 0.0, newItems)
 
 	err = uc.repo.CreateOrder(ctx, &newOrder, func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error) {
+		// whether any arguments is nil pointer
+		if order == nil || user == nil || products == nil {
+			return false, orderEntity.ErrInvalidMemory
+		}
+
+		// order's items and products must be the same length
+		orderItems := order.GetItemsSafe()
+		if len(*products) != len(orderItems) {
+			return false, orderEntity.ErrNotEqual
+		}
+
 		totalPrice := float32(0)
 
-		for idx, item := range order.Items {
-			productQuantity := (*products)[idx].Quantity
+		for idx, item := range orderItems {
+			product := (*products)[idx]
 
-			if productQuantity < item.Quantity {
+			productQuantity := product.GetQuantity()
+			if productQuantity < item.GetQuantity() {
 				return false, orderEntity.ErrOutOfStock
 			}
 
-			totalPrice += (*products)[idx].Price * float32(item.Quantity)
-			fmt.Println((*products)[idx].Name)
-			order.Items[idx].SetProductName((*products)[idx].Name)
-			order.Items[idx].SetProductPrice((*products)[idx].Price)
-			(*products)[idx].SetQuantity(productQuantity - item.Quantity)
+			totalPrice += product.GetPrice() * float32(item.GetQuantity())
+
+			// update order's item
+			i := (*order).GetItemSafe(idx)
+			if i == nil {
+				return false, orderEntity.ErrInvalidMemory
+			}
+
+			i.SetProductName(product.GetName())
+			i.SetProductPrice(product.GetPrice())
+			product.SetQuantity(productQuantity - i.GetQuantity())
 		}
 
-		if user.Balance < totalPrice {
+		if user.GetBalance() < totalPrice {
 			return false, orderEntity.ErrInsufficientBalance
 		}
 
 		order.SetTotalPrice(totalPrice)
-		user.SetBalance(user.Balance - totalPrice)
+		user.SetBalance(user.GetBalance() - totalPrice)
 
 		return true, nil
 	})
