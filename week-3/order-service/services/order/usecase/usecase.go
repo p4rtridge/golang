@@ -10,7 +10,7 @@ import (
 )
 
 type OrderUsecase interface {
-	CreateOrder(ctx context.Context, data orderEntity.OrderRequest) error
+	CreateOrder(ctx context.Context, data *orderEntity.Order) error
 	GetOrders(ctx context.Context) (*[]orderEntity.Order, error)
 }
 
@@ -24,31 +24,18 @@ func NewUsecase(repo orderRepo.OrderRepository) OrderUsecase {
 	}
 }
 
-func (uc *orderUsecase) CreateOrder(ctx context.Context, data orderEntity.OrderRequest) error {
-	if err := data.Validate(); err != nil {
-		return core.ErrBadRequest.WithError(orderEntity.ErrItemEmpty.Error())
-	}
-
+func (uc *orderUsecase) CreateOrder(ctx context.Context, data *orderEntity.Order) error {
 	requester := core.GetRequester(ctx)
 
 	uid, err := core.DecomposeUID(requester.GetSubject())
 	if err != nil {
 		return core.ErrInternalServerError.WithDebug(err.Error())
 	}
+
 	requesterId := int(uid.GetLocalID())
+	data.SetUserId(requesterId)
 
-	dataItems := data.GetItems()
-	newItems := make([]orderEntity.OrderItem, 0, len(dataItems))
-
-	for _, reqItem := range dataItems {
-		newItem := orderEntity.NewOrderItem(0, reqItem.GetItemId(), "", 0.0, reqItem.GetItemQuantity())
-
-		newItems = append(newItems, newItem)
-	}
-
-	newOrder := orderEntity.NewOrder(0, requesterId, 0.0, newItems)
-
-	err = uc.repo.CreateOrder(ctx, &newOrder, func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error) {
+	err = uc.repo.CreateOrder(ctx, data, func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error) {
 		// whether any arguments is nil pointer
 		if order == nil || user == nil || products == nil {
 			return false, orderEntity.ErrInvalidMemory
@@ -63,7 +50,7 @@ func (uc *orderUsecase) CreateOrder(ctx context.Context, data orderEntity.OrderR
 		totalPrice := float32(0)
 
 		for idx, item := range orderItems {
-			product := (*products)[idx]
+			product := &(*products)[idx]
 
 			productQuantity := product.GetQuantity()
 			if productQuantity < item.GetQuantity() {
@@ -80,7 +67,7 @@ func (uc *orderUsecase) CreateOrder(ctx context.Context, data orderEntity.OrderR
 
 			i.SetProductName(product.GetName())
 			i.SetProductPrice(product.GetPrice())
-			product.SetQuantity(productQuantity - i.GetQuantity())
+			product.SetQuantity(i.GetQuantity())
 		}
 
 		if user.GetBalance() < totalPrice {
@@ -88,7 +75,7 @@ func (uc *orderUsecase) CreateOrder(ctx context.Context, data orderEntity.OrderR
 		}
 
 		order.SetTotalPrice(totalPrice)
-		user.SetBalance(user.GetBalance() - totalPrice)
+		user.SetBalance(totalPrice)
 
 		return true, nil
 	})
@@ -107,7 +94,15 @@ func (uc *orderUsecase) CreateOrder(ctx context.Context, data orderEntity.OrderR
 }
 
 func (uc *orderUsecase) GetOrders(ctx context.Context) (*[]orderEntity.Order, error) {
-	orders, err := uc.repo.GetOrders(ctx)
+	requester := core.GetRequester(ctx)
+
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return nil, core.ErrInternalServerError.WithDebug(err.Error())
+	}
+	requesterId := int(uid.GetLocalID())
+
+	orders, err := uc.repo.GetOrders(ctx, requesterId)
 	if err != nil {
 		return nil, core.ErrNotFound.WithError(orderEntity.ErrOrderNotFound.Error()).WithDebug(err.Error())
 	}

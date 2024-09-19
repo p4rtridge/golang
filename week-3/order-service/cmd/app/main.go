@@ -6,7 +6,6 @@ import (
 	"order_service/config"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
@@ -20,7 +19,10 @@ func main() {
 	app := fiber.New()
 
 	app.Use(recover.New())
-	app.Use(logger.New())
+	// app.Use(limiter.New(limiter.Config{
+	// 	Max:        256,
+	// 	Expiration: 5 * time.Second,
+	// }))
 
 	composer.SetUpRoutes(app.Group("/v1"), cfg, pg, rd)
 

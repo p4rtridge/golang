@@ -34,6 +34,10 @@ func (product *Product) SetQuantity(q int) {
 	}
 }
 
+func (product Product) GetId() int {
+	return product.Id
+}
+
 func (product Product) GetName() string {
 	return product.Name
 }

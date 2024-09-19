@@ -31,6 +31,10 @@ func (srv *service) CreateOrder(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
+	if err := data.Validate(); err != nil {
+		return core.ErrBadRequest.WithError(orderEntity.ErrItemEmpty.Error())
+	}
+
 	requester, ok := c.Locals(core.KeyRequester).(core.Requester)
 	if !ok {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
@@ -38,7 +42,18 @@ func (srv *service) CreateOrder(c *fiber.Ctx) error {
 
 	ctx := core.ContextWithRequester(c.Context(), requester)
 
-	err := srv.usecase.CreateOrder(ctx, data)
+	dataItems := data.GetItems()
+	newItems := make([]orderEntity.OrderItem, 0, len(dataItems))
+
+	for _, reqItem := range dataItems {
+		newItem := orderEntity.NewOrderItem(0, reqItem.GetItemId(), "", 0.0, reqItem.GetItemQuantity())
+
+		newItems = append(newItems, newItem)
+	}
+
+	newOrder := orderEntity.NewOrder(0, 0, 0.0, newItems)
+
+	err := srv.usecase.CreateOrder(ctx, &newOrder)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

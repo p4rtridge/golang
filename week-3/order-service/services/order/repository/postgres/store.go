@@ -2,7 +2,8 @@ package postgres
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"order_service/pkg"
 	orderEntity "order_service/services/order/entity"
 	productEntity "order_service/services/product/entity"
 	userEntity "order_service/services/user/entity"
@@ -14,17 +15,17 @@ import (
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *orderEntity.Order, callbackFn func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error)) error
-	GetOrders(ctx context.Context) (*[]orderEntity.Order, error)
+	GetOrders(ctx context.Context, userId int) (*[]orderEntity.Order, error)
 }
 
 const (
-	QUERY_GET_ORDERS                  = "SELECT o.id AS order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id"
-	QUERY_GET_USER_LOCK               = "SELECT * FROM users WHERE id = $1 FOR UPDATE"
-	QUERY_GET_PRODUCT_LOCK            = "SELECT * FROM products WHERE id = $1 FOR UPDATE"
+	QUERY_GET_ORDERS                  = "SELECT o.id AS order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id WHERE o.user_id = $1"
+	QUERY_GET_USER_LOCK               = "SELECT * FROM users WHERE id = $1"
+	QUERY_GET_PRODUCT_LOCK            = "SELECT * FROM products WHERE id = $1"
 	QUERY_CREATE_ORDER_WITH_RETURN_ID = "INSERT INTO orders (user_id, total_price) VALUES ($1, $2) RETURNING id"
 	QUERY_CREATE_ORDER_ITEM           = "INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity) VALUES ($1, $2, $3, $4, $5)"
-	QUERY_UPDATE_USER_BALANCE         = "UPDATE users SET balance = COALESCE($2, balance) WHERE id = $1"
-	QUERY_UPDATE_PRODUCT_QUANTITY     = "UPDATE products SET quantity = COALESCE($2, quantity) WHERE id = $1"
+	QUERY_UPDATE_USER_BALANCE         = "UPDATE users SET balance = balance - $2, updated_at = $3 WHERE id = $1"
+	QUERY_UPDATE_PRODUCT_QUANTITY     = "UPDATE products SET quantity = quantity - $2, updated_at = $3 WHERE id = $1"
 )
 
 type postgresRepo struct {
@@ -38,7 +39,7 @@ func NewOrderRepo(db *pgxpool.Pool) OrderRepository {
 }
 
 func (repo *postgresRepo) CreateOrder(ctx context.Context, order *orderEntity.Order, callbackFn func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error)) error {
-	return runInTransaction(ctx, repo.db, func(tx pgx.Tx) error {
+	return pkg.RunInTransaction(ctx, repo.db, func(tx pgx.Tx) error {
 		var user userEntity.User
 
 		err := tx.QueryRow(ctx, QUERY_GET_USER_LOCK, order.GetUserIdSafe()).Scan(&user.Id, &user.Username, &user.Password, &user.Balance, &user.CreatedAt, &user.UpdatedAt)
@@ -56,6 +57,7 @@ func (repo *postgresRepo) CreateOrder(ctx context.Context, order *orderEntity.Or
 			if err != nil {
 				return err
 			}
+			fmt.Println(product.GetQuantity())
 
 			products = append(products, product)
 		}
@@ -89,13 +91,13 @@ func (repo *postgresRepo) CreateOrder(ctx context.Context, order *orderEntity.Or
 				return err
 			}
 
-			_, err = tx.Exec(ctx, QUERY_UPDATE_PRODUCT_QUANTITY, products[idx].GetPrice(), products[idx].GetQuantity())
+			_, err = tx.Exec(ctx, QUERY_UPDATE_PRODUCT_QUANTITY, products[idx].GetId(), products[idx].GetQuantity(), time.Now())
 			if err != nil {
 				return err
 			}
 		}
 
-		_, err = tx.Exec(ctx, QUERY_UPDATE_USER_BALANCE, user.GetId(), user.GetBalance())
+		_, err = tx.Exec(ctx, QUERY_UPDATE_USER_BALANCE, user.GetId(), user.GetBalance(), time.Now())
 		if err != nil {
 			return err
 		}
@@ -104,8 +106,8 @@ func (repo *postgresRepo) CreateOrder(ctx context.Context, order *orderEntity.Or
 	})
 }
 
-func (repo *postgresRepo) GetOrders(ctx context.Context) (*[]orderEntity.Order, error) {
-	rows, err := repo.db.Query(ctx, QUERY_GET_ORDERS)
+func (repo *postgresRepo) GetOrders(ctx context.Context, userId int) (*[]orderEntity.Order, error) {
+	rows, err := repo.db.Query(ctx, QUERY_GET_ORDERS, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -146,24 +148,4 @@ func (repo *postgresRepo) GetOrders(ctx context.Context) (*[]orderEntity.Order, 
 	}
 
 	return &orders, nil
-}
-
-func runInTransaction(ctx context.Context, db *pgxpool.Pool, fn func(tx pgx.Tx) error) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = fn(tx)
-
-	if err == nil {
-		return tx.Commit(ctx)
-	}
-
-	rollbackErr := tx.Rollback(ctx)
-	if rollbackErr != nil {
-		return errors.Join(err, rollbackErr)
-	}
-
-	return err
 }

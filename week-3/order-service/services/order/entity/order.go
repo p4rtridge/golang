@@ -29,6 +29,12 @@ func (order *Order) SetId(id int) {
 	}
 }
 
+func (order *Order) SetUserId(id int) {
+	if order != nil {
+		order.UserId = id
+	}
+}
+
 func (order *Order) SetTotalPrice(price float32) {
 	if order != nil {
 		order.TotalPrice = price
