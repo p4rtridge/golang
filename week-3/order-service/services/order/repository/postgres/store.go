@@ -16,12 +16,18 @@ import (
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *orderEntity.Order, callbackFn func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error)) error
 	GetOrders(ctx context.Context, userId int) (*[]orderEntity.Order, error)
+	GetTopFiveOrdersByPrice(ctx context.Context) (*[]orderEntity.Order, error)
+	GetNumOfOrdersPerMonth(ctx context.Context, userId int) (*[]orderEntity.AggregatedOrdersByMonth, error)
+	GetOrder(ctx context.Context, userId, orderId int) (*orderEntity.Order, error)
 }
 
 const (
 	QUERY_GET_ORDERS                  = "SELECT o.id AS order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id WHERE o.user_id = $1"
-	QUERY_GET_USER_LOCK               = "SELECT * FROM users WHERE id = $1"
-	QUERY_GET_PRODUCT_LOCK            = "SELECT * FROM products WHERE id = $1"
+	QUERY_GET_ORDERS_DESC_BY_PRICE    = "SELECT o.id as order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id ORDER BY o.total_price DESC LIMIT 5"
+	QUERY_GET_NUM_OF_ORDERS_PER_MONTH = "SELECT DATE_TRUNC('month', created_at) as time, COUNT(*) as num_of_orders FROM (SELECT * FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id WHERE o.user_id = $1) GROUP BY time ORDER BY time"
+	QUERY_GET_ORDER                   = "SELECT o.id as order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id WHERE o.user_id = $1 AND o.id = $2"
+	QUERY_GET_USER_LOCK               = "SELECT * FROM users WHERE id = $1 FOR UPDATE"
+	QUERY_GET_PRODUCT_LOCK            = "SELECT * FROM products WHERE id = $1 FOR UPDATE"
 	QUERY_CREATE_ORDER_WITH_RETURN_ID = "INSERT INTO orders (user_id, total_price) VALUES ($1, $2) RETURNING id"
 	QUERY_CREATE_ORDER_ITEM           = "INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity) VALUES ($1, $2, $3, $4, $5)"
 	QUERY_UPDATE_USER_BALANCE         = "UPDATE users SET balance = balance - $2, updated_at = $3 WHERE id = $1"
@@ -145,6 +151,108 @@ func (repo *postgresRepo) GetOrders(ctx context.Context, userId int) (*[]orderEn
 
 	for _, order := range ordersMap {
 		orders = append(orders, *order)
+	}
+
+	return &orders, nil
+}
+
+func (repo *postgresRepo) GetOrder(ctx context.Context, userId, orderId int) (*orderEntity.Order, error) {
+	var order orderEntity.Order
+
+	rows, err := repo.db.Query(ctx, QUERY_GET_ORDER, userId, orderId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var orderId, userId, productId, quantity int
+		var productName string
+		var totalPrice, productPrice float32
+		var createdAt time.Time
+		var updatedAt *time.Time
+
+		err := rows.Scan(&orderId, &userId, &productId, &productName, &productPrice, &quantity, &totalPrice, &createdAt, &updatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		order.SetId(orderId)
+		order.SetUserId(userId)
+		order.SetTotalPrice(totalPrice)
+		order.SetCreatedAt(createdAt)
+		order.SetUpdatedAt(updatedAt)
+
+		item := orderEntity.NewOrderItem(orderId, productId, productName, productPrice, quantity)
+
+		order.AddItem(item)
+	}
+
+	return &order, nil
+}
+
+func (repo *postgresRepo) GetTopFiveOrdersByPrice(ctx context.Context) (*[]orderEntity.Order, error) {
+	rows, err := repo.db.Query(ctx, QUERY_GET_ORDERS_DESC_BY_PRICE)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ordersMap := make(map[int]*orderEntity.Order)
+
+	for rows.Next() {
+		var orderId, userId, productId, quantity int
+		var productName string
+		var productPrice, totalPrice float32
+		var createdAt time.Time
+		var updatedAt *time.Time
+
+		err := rows.Scan(&orderId, &userId, &productId, &productName, &productPrice, &quantity, &totalPrice, &createdAt, &updatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		item := orderEntity.NewOrderItem(orderId, productId, productName, productPrice, quantity)
+
+		if _, exists := ordersMap[orderId]; !exists {
+			ordersMap[orderId] = &orderEntity.Order{
+				Id:         orderId,
+				UserId:     userId,
+				TotalPrice: totalPrice,
+				Items:      []orderEntity.OrderItem{item},
+			}
+		} else {
+			ordersMap[orderId].Items = append(ordersMap[orderId].Items, item)
+		}
+	}
+
+	var orders []orderEntity.Order
+
+	for _, order := range ordersMap {
+		orders = append(orders, *order)
+	}
+
+	return &orders, nil
+}
+
+func (repo *postgresRepo) GetNumOfOrdersPerMonth(ctx context.Context, userId int) (*[]orderEntity.AggregatedOrdersByMonth, error) {
+	rows, err := repo.db.Query(ctx, QUERY_GET_NUM_OF_ORDERS_PER_MONTH, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	orders, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (orderEntity.AggregatedOrdersByMonth, error) {
+		var order orderEntity.AggregatedOrdersByMonth
+
+		err := row.Scan(&order.Time, &order.NumOfOrders)
+		if err != nil {
+			return orderEntity.AggregatedOrdersByMonth{}, err
+		}
+
+		return order, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &orders, nil

@@ -37,10 +37,6 @@ func NewUsecase(repo authRepo.AuthRepository, tokenRepo tokenRepo.TokenRepositor
 }
 
 func (uc *authUsecase) Register(ctx context.Context, data *authEntity.AuthUsernamePassword) error {
-	if err := data.Validate(); err != nil {
-		return core.ErrBadRequest.WithError(err.Error())
-	}
-
 	authData, err := uc.repo.GetAuth(ctx, data.Username)
 
 	if err == nil && authData != nil {

@@ -48,8 +48,16 @@ func ConnectToPostgres(cfg *Config) *pgxpool.Pool {
 
 	var e error
 
+	pgCfg, err := pgxpool.ParseConfig(cfg.PGCfg.URL)
+	if err != nil {
+		log.Fatalln(fmt.Errorf("postgres parse config error: %v", err))
+	}
+
+	// to handle 10000 concurrent users
+	pgCfg.MaxConns = 100
+
 	for i := 0; i < 5; i++ {
-		pool, err := pgxpool.New(ctx, cfg.PGCfg.URL)
+		pool, err := pgxpool.NewWithConfig(ctx, pgCfg)
 
 		if err == nil && pool != nil {
 			return pool
@@ -70,6 +78,9 @@ func ConnectToRedis(cfg *Config) *redis.Client {
 	if err != nil {
 		log.Fatalln(fmt.Errorf("redis parse config error: %v", err))
 	}
+
+	// to handle 10000 concurrent users
+	opts.PoolSize = 100
 
 	return redis.NewClient(opts)
 }

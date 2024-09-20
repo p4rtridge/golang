@@ -41,8 +41,8 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 	userRouter := router.Group("/users", authMiddleware)
 	{
 		userRouter.Get("/", userAPIService.GetUsers)
-		userRouter.Get("/:userID", userAPIService.GetUser)
 		userRouter.Get("/profile", userAPIService.GetUserProfile)
+		userRouter.Get("/:userID", userAPIService.GetUser)
 		userRouter.Post("/balance", userAPIService.AddUserBalance)
 	}
 
@@ -60,6 +60,9 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 	orderRouter := router.Group("/orders", authMiddleware)
 	{
 		orderRouter.Get("/", orderAPIService.GetOrders)
+		orderRouter.Get("/top-by-price", orderAPIService.GetTopFiveOrdersByPrice)
+		orderRouter.Get("/orders-by-month", orderAPIService.GetNumOfOrdersByMonth)
+		orderRouter.Get("/:orderID", orderAPIService.GetOrder)
 		orderRouter.Post("/", orderAPIService.CreateOrder)
 	}
 }

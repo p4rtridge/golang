@@ -41,6 +41,24 @@ func (order *Order) SetTotalPrice(price float32) {
 	}
 }
 
+func (order *Order) SetCreatedAt(ca time.Time) {
+	if order != nil {
+		order.CreatedAt = ca
+	}
+}
+
+func (order *Order) SetUpdatedAt(ua *time.Time) {
+	if order != nil {
+		order.UpdatedAt = ua
+	}
+}
+
+func (order *Order) AddItem(item OrderItem) {
+	if order != nil {
+		order.Items = append(order.Items, item)
+	}
+}
+
 func (order *Order) GetIdSafe() int {
 	if order != nil {
 		return order.Id

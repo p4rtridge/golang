@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ import (
 )
 
 const (
-	CONCURRENT_USER   = 300
+	CONCURRENT_USER   = 10000
 	TARGET_PRODUCT_ID = 1
 )
 
@@ -46,11 +47,11 @@ func workerPool() {
 func worker(workerID int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	sendRequest(workerID)
+	username := fmt.Sprintf("user-%d", rand.Intn(1001))
+	sendRequest(workerID, username)
 }
 
-func sendRequest(workerID int) error {
-	username := fmt.Sprintf("user-%d", workerID)
+func sendRequest(workerID int, username string) error {
 	password := "super_safe_password"
 	deviceId := uuid.New().String()
 
@@ -85,30 +86,30 @@ func sendRequest(workerID int) error {
 		return err
 	}
 
-	reqBody = []byte(fmt.Sprintf(`{
-    "items": [{
-      "product_id": %d,
-      "quantity": 1
-    }]
-  }`, TARGET_PRODUCT_ID))
+	// reqBody = []byte(fmt.Sprintf(`{
+	//    "items": [{
+	//      "product_id": %d,
+	//      "quantity": 1
+	//    }]
+	//  }`, TARGET_PRODUCT_ID))
+	//
+	// req, err = http.NewRequest("POST", "http://localhost:8080/v1/orders", bytes.NewBuffer(reqBody))
+	// if err != nil {
+	// 	fmt.Printf("[Worker %d]: error creating order request: %v\n", workerID, err)
+	// 	return err
+	// }
+	//
+	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authResp.Data.AccessToken.Token))
+	// req.Header.Set("Content-Type", "application/json")
+	//
+	// resp, err = sendRequestWithRetry(client, req)
+	// if err != nil {
+	// 	fmt.Printf("[Worker %d]: error sending order request: %v\n", workerID, err)
+	// 	return err
+	// }
 
-	req, err = http.NewRequest("POST", "http://localhost:8080/v1/orders", bytes.NewBuffer(reqBody))
-	if err != nil {
-		fmt.Printf("[Worker %d]: error creating order request: %v\n", workerID, err)
-		return err
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authResp.Data.AccessToken.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err = sendRequestWithRetry(client, req)
-	if err != nil {
-		fmt.Printf("[Worker %d]: error sending order request: %v\n", workerID, err)
-		return err
-	}
-
-	if status := resp.StatusCode; status == 201 {
-		fmt.Printf("[Worker %d]: Response received. Status: %d\n", workerID, resp.StatusCode)
+	if status := resp.StatusCode; status >= 200 || status < 300 {
+		fmt.Printf("[Worker %d]: Response received. Status: %d, Data: %v\n", workerID, resp.StatusCode, authResp)
 		return nil
 	} else {
 		fmt.Printf("[Worker %d]: Error. Status: %d\n", workerID, resp.StatusCode)
@@ -137,5 +138,7 @@ func sendRequestWithRetry(client *http.Client, req *http.Request) (*http.Respons
 }
 
 func main() {
+	rand.Seed(time.Now().Unix())
+
 	workerPool()
 }

@@ -12,6 +12,9 @@ import (
 type OrderUsecase interface {
 	CreateOrder(ctx context.Context, data *orderEntity.Order) error
 	GetOrders(ctx context.Context) (*[]orderEntity.Order, error)
+	GetTopFiveOrdersByPrice(ctx context.Context) (*[]orderEntity.Order, error)
+	GetNumOfOrdersByMonth(ctx context.Context) (*[]orderEntity.AggregatedOrdersByMonth, error)
+	GetOrder(ctx context.Context, orderId int) (*orderEntity.Order, error)
 }
 
 type orderUsecase struct {
@@ -108,4 +111,47 @@ func (uc *orderUsecase) GetOrders(ctx context.Context) (*[]orderEntity.Order, er
 	}
 
 	return orders, nil
+}
+
+func (uc *orderUsecase) GetTopFiveOrdersByPrice(ctx context.Context) (*[]orderEntity.Order, error) {
+	orders, err := uc.repo.GetTopFiveOrdersByPrice(ctx)
+	if err != nil {
+		return nil, core.ErrNotFound.WithError(orderEntity.ErrOrderNotFound.Error()).WithDebug(err.Error())
+	}
+
+	return orders, nil
+}
+
+func (uc *orderUsecase) GetNumOfOrdersByMonth(ctx context.Context) (*[]orderEntity.AggregatedOrdersByMonth, error) {
+	requester := core.GetRequester(ctx)
+
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return nil, core.ErrInternalServerError.WithDebug(err.Error())
+	}
+	requesterId := int(uid.GetLocalID())
+
+	orders, err := uc.repo.GetNumOfOrdersPerMonth(ctx, requesterId)
+	if err != nil {
+		return nil, core.ErrInternalServerError.WithError(orderEntity.ErrOrderNotFound.Error()).WithDebug(err.Error())
+	}
+
+	return orders, nil
+}
+
+func (uc *orderUsecase) GetOrder(ctx context.Context, orderId int) (*orderEntity.Order, error) {
+	requester := core.GetRequester(ctx)
+
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return nil, core.ErrInternalServerError.WithDebug(err.Error())
+	}
+	requesterId := int(uid.GetLocalID())
+
+	order, err := uc.repo.GetOrder(ctx, requesterId, orderId)
+	if err != nil {
+		return nil, core.ErrNotFound.WithError(orderEntity.ErrOrderNotFound.Error()).WithDebug(err.Error())
+	}
+
+	return order, nil
 }

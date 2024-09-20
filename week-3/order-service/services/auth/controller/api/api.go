@@ -49,6 +49,10 @@ func (srv *service) Login(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
+	if err := data.Validate(); err != nil {
+		return core.ErrBadRequest.WithError(err.Error())
+	}
+
 	response, err := srv.usecase.Login(c.Context(), &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)

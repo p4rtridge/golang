@@ -1,5 +1,7 @@
 package entity
 
+import "time"
+
 type OrderRequest struct {
 	Items []ProductItem `json:"items"`
 }
@@ -7,6 +9,11 @@ type OrderRequest struct {
 type ProductItem struct {
 	ProductId *int `json:"product_id"`
 	Quantity  *int `json:"quantity"`
+}
+
+type AggregatedOrdersByMonth struct {
+	Time        time.Time
+	NumOfOrders int
 }
 
 func (data OrderRequest) Validate() error {
