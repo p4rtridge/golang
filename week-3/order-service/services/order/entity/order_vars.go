@@ -16,6 +16,14 @@ type AggregatedOrdersByMonth struct {
 	NumOfOrders int
 }
 
+type OrdersSummarize struct {
+	UserId                   int     `json:"user_id"`
+	Username                 string  `json:"username"`
+	NumOfOrders              int     `json:"num_of_orders"`
+	SumOrderPrice            float32 `json:"sum_order_price"`
+	AverageOrderItemQuantity float32 `json:"average_order_item_quantity"`
+}
+
 func (data OrderRequest) Validate() error {
 	if len(data.Items) < 1 {
 		return ErrItemEmpty

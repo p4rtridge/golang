@@ -64,5 +64,6 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 		orderRouter.Get("/orders-by-month", orderAPIService.GetNumOfOrdersByMonth)
 		orderRouter.Get("/:orderID", orderAPIService.GetOrder)
 		orderRouter.Post("/", orderAPIService.CreateOrder)
+		orderRouter.Post("/summarize", orderAPIService.GetOrdersSummarize)
 	}
 }

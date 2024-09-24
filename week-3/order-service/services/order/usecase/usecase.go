@@ -7,6 +7,7 @@ import (
 	orderRepo "order_service/services/order/repository/postgres"
 	productEntity "order_service/services/product/entity"
 	userEntity "order_service/services/user/entity"
+	"time"
 )
 
 type OrderUsecase interface {
@@ -14,6 +15,7 @@ type OrderUsecase interface {
 	GetOrders(ctx context.Context) (*[]orderEntity.Order, error)
 	GetTopFiveOrdersByPrice(ctx context.Context) (*[]orderEntity.Order, error)
 	GetNumOfOrdersByMonth(ctx context.Context) (*[]orderEntity.AggregatedOrdersByMonth, error)
+	GetOrdersSummarize(ctx context.Context, startDate, endDate time.Time) (*[]orderEntity.OrdersSummarize, error)
 	GetOrder(ctx context.Context, orderId int) (*orderEntity.Order, error)
 }
 
@@ -28,17 +30,7 @@ func NewUsecase(repo orderRepo.OrderRepository) OrderUsecase {
 }
 
 func (uc *orderUsecase) CreateOrder(ctx context.Context, data *orderEntity.Order) error {
-	requester := core.GetRequester(ctx)
-
-	uid, err := core.DecomposeUID(requester.GetSubject())
-	if err != nil {
-		return core.ErrInternalServerError.WithDebug(err.Error())
-	}
-
-	requesterId := int(uid.GetLocalID())
-	data.SetUserId(requesterId)
-
-	err = uc.repo.CreateOrder(ctx, data, func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error) {
+	err := uc.repo.CreateOrder(ctx, data, func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error) {
 		// whether any arguments is nil pointer
 		if order == nil || user == nil || products == nil {
 			return false, orderEntity.ErrInvalidMemory
@@ -137,6 +129,15 @@ func (uc *orderUsecase) GetNumOfOrdersByMonth(ctx context.Context) (*[]orderEnti
 	}
 
 	return orders, nil
+}
+
+func (uc *orderUsecase) GetOrdersSummarize(ctx context.Context, startDate, endDate time.Time) (*[]orderEntity.OrdersSummarize, error) {
+	datas, err := uc.repo.GetOrdersSummarize(ctx, startDate, endDate)
+	if err != nil {
+		return nil, core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	return datas, nil
 }
 
 func (uc *orderUsecase) GetOrder(ctx context.Context, orderId int) (*orderEntity.Order, error) {

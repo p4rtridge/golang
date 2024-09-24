@@ -10,8 +10,8 @@ import (
 type UserUsecase interface {
 	GetUsers(ctx context.Context) (*[]entity.User, error)
 	GetUser(ctx context.Context, userID int) (*entity.User, error)
-	GetUserProfile(ctx context.Context) (*entity.User, error)
-	AddUserBalance(ctx context.Context, data *entity.UserRequest) error
+	GetUserProfile(ctx context.Context, userId int) (*entity.User, error)
+	AddUserBalance(ctx context.Context, userId int, balance float32) error
 }
 
 type userUsecase struct {
@@ -22,23 +22,6 @@ func NewUsecase(repo userRepo.UserRepository) UserUsecase {
 	return &userUsecase{
 		repo,
 	}
-}
-
-func (uc *userUsecase) GetUserProfile(ctx context.Context) (*entity.User, error) {
-	requester := core.GetRequester(ctx)
-
-	uid, err := core.DecomposeUID(requester.GetSubject())
-	if err != nil {
-		return nil, core.ErrInternalServerError.WithDebug(err.Error())
-	}
-	requesterId := int(uid.GetLocalID())
-
-	user, err := uc.repo.GetUserById(ctx, requesterId)
-	if err != nil {
-		return nil, core.ErrUnauthorized.WithError(entity.ErrCannotGetUser.Error()).WithDebug(err.Error())
-	}
-
-	return user, nil
 }
 
 func (uc *userUsecase) GetUsers(ctx context.Context) (*[]entity.User, error) {
@@ -65,16 +48,17 @@ func (uc *userUsecase) GetUser(ctx context.Context, userID int) (*entity.User, e
 	return user, nil
 }
 
-func (uc *userUsecase) AddUserBalance(ctx context.Context, data *entity.UserRequest) error {
-	requester := core.GetRequester(ctx)
-
-	uid, err := core.DecomposeUID(requester.GetSubject())
+func (uc *userUsecase) GetUserProfile(ctx context.Context, userId int) (*entity.User, error) {
+	user, err := uc.repo.GetUserById(ctx, userId)
 	if err != nil {
-		return core.ErrInternalServerError.WithDebug(err.Error())
+		return nil, core.ErrUnauthorized.WithError(entity.ErrCannotGetUser.Error()).WithDebug(err.Error())
 	}
-	requesterId := int(uid.GetLocalID())
 
-	err = uc.repo.AddUserBalanceById(ctx, requesterId, data.Balance)
+	return user, nil
+}
+
+func (uc *userUsecase) AddUserBalance(ctx context.Context, userId int, balance float32) error {
+	err := uc.repo.AddUserBalanceById(ctx, userId, balance)
 	if err != nil {
 		return core.ErrInternalServerError.WithError(entity.ErrCannotAddBalance.Error()).WithDebug(err.Error())
 	}

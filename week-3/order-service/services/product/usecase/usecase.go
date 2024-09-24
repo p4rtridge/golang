@@ -8,10 +8,10 @@ import (
 )
 
 type ProductUsecase interface {
-	CreateProduct(ctx context.Context, data *entity.ProductRequest) error
+	CreateProduct(ctx context.Context, data entity.Product) error
 	GetProducts(ctx context.Context) (*[]entity.Product, error)
 	GetProduct(ctx context.Context, productID int) (*entity.Product, error)
-	UpdateProduct(ctx context.Context, productID int, data *entity.ProductRequest) error
+	UpdateProduct(ctx context.Context, productID int, data entity.Product) error
 	DeleteProduct(ctx context.Context, productID int) error
 }
 
@@ -25,10 +25,8 @@ func NewUsecase(repo productRepo.ProductRepository) ProductUsecase {
 	}
 }
 
-func (uc *productUsecase) CreateProduct(ctx context.Context, data *entity.ProductRequest) error {
-	newProduct := entity.NewProduct(0, data.Name, data.Quantity, data.Price)
-
-	err := uc.repo.CreateProduct(ctx, &newProduct)
+func (uc *productUsecase) CreateProduct(ctx context.Context, data entity.Product) error {
+	err := uc.repo.CreateProduct(ctx, data)
 	if err != nil {
 		return core.ErrInternalServerError.WithError(entity.ErrCannotCreate.Error()).WithDebug(err.Error())
 	}
@@ -62,10 +60,8 @@ func (uc *productUsecase) GetProduct(ctx context.Context, productID int) (*entit
 	return product, nil
 }
 
-func (uc *productUsecase) UpdateProduct(ctx context.Context, productID int, data *entity.ProductRequest) error {
-	newData := entity.NewProduct(0, data.Name, data.Quantity, data.Price)
-
-	err := uc.repo.UpdateProduct(ctx, productID, &newData)
+func (uc *productUsecase) UpdateProduct(ctx context.Context, productID int, data entity.Product) error {
+	err := uc.repo.UpdateProduct(ctx, productID, data)
 	if err != nil {
 		return core.ErrInternalServerError.WithError(entity.ErrCannotUpdate.Error()).WithDebug(err.Error())
 	}

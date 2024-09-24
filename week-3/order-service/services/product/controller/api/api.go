@@ -34,7 +34,9 @@ func (srv *service) CreateProduct(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err := srv.usecase.CreateProduct(c.Context(), &data)
+	newProduct := entity.NewProduct(0, data.Name, data.Quantity, data.Price)
+
+	err := srv.usecase.CreateProduct(c.Context(), newProduct)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -77,7 +79,9 @@ func (srv *service) UpdateProduct(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err = srv.usecase.UpdateProduct(c.Context(), targetId, &data)
+	newData := entity.NewProduct(0, data.Name, data.Quantity, data.Price)
+
+	err = srv.usecase.UpdateProduct(c.Context(), targetId, newData)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

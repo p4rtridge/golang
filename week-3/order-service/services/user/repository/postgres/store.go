@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"order_service/internal/core"
 	"order_service/services/user/entity"
 
@@ -47,7 +46,6 @@ func (repo *postgresRepo) GetUsers(ctx context.Context) (*[]entity.User, error) 
 		return data, nil
 	})
 	if err != nil {
-		fmt.Println("get users", err)
 		return nil, err
 	}
 

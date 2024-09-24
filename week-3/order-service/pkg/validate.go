@@ -36,12 +36,12 @@ func CheckPassword(password string) error {
 	// [a-z][A-Za-z0-9]* : Ensure at least one lowercase letter
 	// [0-9][A-Za-z0-9]* : Ensure at least one digit
 
-	// comment this line to load test
-	// re := regexp.MustCompile("^[A-Za-z0-9]*[A-Z][A-Za-z0-9]*[a-z][A-Za-z0-9]*[0-9][A-Za-z0-9]*")
-	//
-	// if !re.MatchString(password) {
-	// 	return ErrPasswordIsNotValid
-	// }
+	// comment these line to load test
+	re := regexp.MustCompile("^[A-Za-z0-9]*[A-Z][A-Za-z0-9]*[a-z][A-Za-z0-9]*[0-9][A-Za-z0-9]*")
+
+	if !re.MatchString(password) {
+		return ErrPasswordIsNotValid
+	}
 
 	return nil
 }

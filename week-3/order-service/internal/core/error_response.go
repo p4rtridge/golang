@@ -27,14 +27,14 @@ func (e DefaultError) StatusCode() int {
 	return e.CodeField
 }
 
-func (e DefaultError) WithError(message string) *DefaultError {
+func (e DefaultError) WithError(message string) DefaultError {
 	e.ErrorField = message
-	return &e
+	return e
 }
 
-func (e DefaultError) WithDebug(debug string) *DefaultError {
+func (e DefaultError) WithDebug(debug string) DefaultError {
 	e.DebugField = debug
-	return &e
+	return e
 }
 
 type StatusCodeCarrier interface {

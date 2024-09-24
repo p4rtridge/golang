@@ -32,9 +32,13 @@ func (srv *service) GetUserProfile(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
 
-	ctx := core.ContextWithRequester(c.Context(), requester)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return pkg.WriteResponse(c, core.ErrInternalServerError.WithDebug(err.Error()))
+	}
+	requesterId := int(uid.GetLocalID())
 
-	user, err := srv.usecase.GetUserProfile(ctx)
+	user, err := srv.usecase.GetUserProfile(c.Context(), requesterId)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -71,15 +75,19 @@ func (srv *service) AddUserBalance(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
 
-	ctx := core.ContextWithRequester(c.Context(), requester)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return pkg.WriteResponse(c, core.ErrInternalServerError.WithDebug(err.Error()))
+	}
 
+	requesterId := int(uid.GetLocalID())
 	var data entity.UserRequest
 
 	if err := c.BodyParser(&data); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err := srv.usecase.AddUserBalance(ctx, &data)
+	err = srv.usecase.AddUserBalance(c.Context(), requesterId, data.Balance)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

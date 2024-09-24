@@ -16,6 +16,7 @@ import (
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *orderEntity.Order, callbackFn func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error)) error
 	GetOrders(ctx context.Context, userId int) (*[]orderEntity.Order, error)
+	GetOrdersSummarize(ctx context.Context, startDate, endDate time.Time) (*[]orderEntity.OrdersSummarize, error)
 	GetTopFiveOrdersByPrice(ctx context.Context) (*[]orderEntity.Order, error)
 	GetNumOfOrdersPerMonth(ctx context.Context, userId int) (*[]orderEntity.AggregatedOrdersByMonth, error)
 	GetOrder(ctx context.Context, userId, orderId int) (*orderEntity.Order, error)
@@ -25,6 +26,7 @@ const (
 	QUERY_GET_ORDERS                  = "SELECT o.id AS order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id WHERE o.user_id = $1"
 	QUERY_GET_ORDERS_DESC_BY_PRICE    = "SELECT o.id as order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id ORDER BY o.total_price DESC LIMIT 5"
 	QUERY_GET_NUM_OF_ORDERS_PER_MONTH = "SELECT DATE_TRUNC('month', created_at) as time, COUNT(*) as num_of_orders FROM (SELECT * FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id WHERE o.user_id = $1) GROUP BY time ORDER BY time"
+	QUERY_GET_ORDERS_SUMMARIZE        = "SELECT u.id, u.username, COUNT(DISTINCT order_id) AS num_of_orders, SUM(COALESCE(product_price, 0)) AS sum_order_price, AVG(COALESCE(quantity, 0)) AS avg_order_item_quantity FROM users AS u LEFT JOIN (SELECT o.id AS order_id, o.user_id, o.total_price, oi.product_price, oi.quantity FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id WHERE (o.created_at BETWEEN DATE_TRUNC('day', CAST($1 AS DATE)) AND DATE_TRUNC('day', CAST($2 AS DATE)))) AS agg ON u.id = agg.user_id GROUP BY u.id"
 	QUERY_GET_ORDER                   = "SELECT o.id as order_id, o.user_id, oi.product_id, oi.product_name, oi.product_price, oi.quantity, o.total_price, o.created_at, o.updated_at FROM orders AS o JOIN order_items AS oi ON o.id = oi.order_id WHERE o.user_id = $1 AND o.id = $2"
 	QUERY_GET_USER_LOCK               = "SELECT * FROM users WHERE id = $1 FOR UPDATE"
 	QUERY_GET_PRODUCT_LOCK            = "SELECT * FROM products WHERE id = $1 FOR UPDATE"
@@ -154,6 +156,29 @@ func (repo *postgresRepo) GetOrders(ctx context.Context, userId int) (*[]orderEn
 	}
 
 	return &orders, nil
+}
+
+func (repo *postgresRepo) GetOrdersSummarize(ctx context.Context, startDate, endDate time.Time) (*[]orderEntity.OrdersSummarize, error) {
+	rows, err := repo.db.Query(ctx, QUERY_GET_ORDERS_SUMMARIZE, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	datas, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (orderEntity.OrdersSummarize, error) {
+		var data orderEntity.OrdersSummarize
+
+		err := row.Scan(&data.UserId, &data.Username, &data.NumOfOrders, &data.SumOrderPrice, &data.AverageOrderItemQuantity)
+		if err != nil {
+			return orderEntity.OrdersSummarize{}, err
+		}
+
+		return data, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &datas, nil
 }
 
 func (repo *postgresRepo) GetOrder(ctx context.Context, userId, orderId int) (*orderEntity.Order, error) {

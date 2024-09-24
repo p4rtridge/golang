@@ -13,10 +13,10 @@ import (
 )
 
 type ProductRepository interface {
-	CreateProduct(ctx context.Context, data *entity.Product) error
+	CreateProduct(ctx context.Context, data entity.Product) error
 	GetProducts(ctx context.Context) (*[]entity.Product, error)
 	GetProduct(ctx context.Context, productID int) (*entity.Product, error)
-	UpdateProduct(ctx context.Context, productID int, data *entity.Product) error
+	UpdateProduct(ctx context.Context, productID int, data entity.Product) error
 	DeleteProduct(ctx context.Context, productID int) error
 }
 
@@ -38,10 +38,9 @@ func NewProductRepo(db *pgxpool.Pool) ProductRepository {
 	}
 }
 
-func (repo *postgresRepo) CreateProduct(ctx context.Context, data *entity.Product) error {
+func (repo *postgresRepo) CreateProduct(ctx context.Context, data entity.Product) error {
 	_, err := repo.db.Exec(ctx, QUERY_INSERT_PRODUCT, data.Name, data.Quantity, data.Price)
 	if err != nil {
-		fmt.Println("create err", err)
 		return err
 	}
 
@@ -84,7 +83,7 @@ func (repo *postgresRepo) GetProduct(ctx context.Context, productID int) (*entit
 	return &data, nil
 }
 
-func (repo *postgresRepo) UpdateProduct(ctx context.Context, productID int, data *entity.Product) error {
+func (repo *postgresRepo) UpdateProduct(ctx context.Context, productID int, data entity.Product) error {
 	newName := pgtype.Text{Valid: false}
 	newQuantity := pgtype.Int4{Valid: false}
 	newPrice := pgtype.Float4{Valid: false}
