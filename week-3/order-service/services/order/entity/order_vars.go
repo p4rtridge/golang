@@ -7,8 +7,8 @@ type OrderRequest struct {
 }
 
 type ProductItem struct {
-	ProductId *int `json:"product_id"`
-	Quantity  *int `json:"quantity"`
+	ProductId int `json:"product_id"`
+	Quantity  int `json:"quantity"`
 }
 
 type AggregatedOrdersByMonth struct {
@@ -30,11 +30,11 @@ func (data OrderRequest) Validate() error {
 	}
 
 	for _, item := range data.Items {
-		if item.ProductId == nil {
+		if item.ProductId == 0 {
 			return ErrMissingField
 		}
 
-		if item.Quantity == nil {
+		if item.Quantity == 0 {
 			return ErrMissingField
 		}
 	}
@@ -47,15 +47,9 @@ func (data OrderRequest) GetItems() []ProductItem {
 }
 
 func (data ProductItem) GetItemId() int {
-	if data.ProductId != nil {
-		return *data.ProductId
-	}
-	return 0
+	return data.ProductId
 }
 
 func (data ProductItem) GetItemQuantity() int {
-	if data.Quantity != nil {
-		return *data.Quantity
-	}
-	return 0
+	return data.Quantity
 }

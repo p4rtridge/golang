@@ -131,7 +131,6 @@ func (suite *ProductUsecaseTestSuite) TestCreateProduct() {
 func (suite *ProductUsecaseTestSuite) TestGetProducts() {
 	tests := []struct {
 		name      string
-		ctx       context.Context
 		repoErr   error
 		want      *[]entity.Product
 		wantErr   error
@@ -139,7 +138,6 @@ func (suite *ProductUsecaseTestSuite) TestGetProducts() {
 	}{
 		{
 			name:      "Products exists",
-			ctx:       context.TODO(),
 			repoErr:   nil,
 			want:      suite.products,
 			wantErr:   nil,
@@ -147,7 +145,6 @@ func (suite *ProductUsecaseTestSuite) TestGetProducts() {
 		},
 		{
 			name:      "Products empty",
-			ctx:       context.TODO(),
 			repoErr:   core.ErrRecordNotFound,
 			want:      nil,
 			wantErr:   core.ErrNotFound,
@@ -155,7 +152,6 @@ func (suite *ProductUsecaseTestSuite) TestGetProducts() {
 		},
 		{
 			name:      "Products return an error",
-			ctx:       context.TODO(),
 			repoErr:   errors.New("this is an error"),
 			want:      nil,
 			wantErr:   core.ErrInternalServerError.WithDebug(errors.New("this is an error").Error()),
@@ -167,9 +163,9 @@ func (suite *ProductUsecaseTestSuite) TestGetProducts() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetProducts", tt.ctx).Return(tt.want, tt.repoErr)
+			suite.mockRepo.On("GetProducts", mock.Anything).Return(tt.want, tt.repoErr)
 
-			products, err := suite.usecase.GetProducts(tt.ctx)
+			products, err := suite.usecase.GetProducts(context.Background())
 
 			assert.Equal(suite.T(), tt.want, products, "products should be retrieved correctly")
 
@@ -185,7 +181,6 @@ func (suite *ProductUsecaseTestSuite) TestGetProducts() {
 func (suite *ProductUsecaseTestSuite) TestGetProduct() {
 	tests := []struct {
 		name      string
-		ctx       context.Context
 		productId int
 		repoErr   error
 		want      *entity.Product
@@ -194,7 +189,6 @@ func (suite *ProductUsecaseTestSuite) TestGetProduct() {
 	}{
 		{
 			name:      "Product exists",
-			ctx:       context.TODO(),
 			productId: 1,
 			repoErr:   nil,
 			want:      &(*suite.products)[0],
@@ -203,11 +197,18 @@ func (suite *ProductUsecaseTestSuite) TestGetProduct() {
 		},
 		{
 			name:      "Product empty",
-			ctx:       context.TODO(),
 			productId: 1,
 			repoErr:   core.ErrRecordNotFound,
 			want:      nil,
 			wantErr:   core.ErrNotFound,
+			assertion: assert.Error,
+		},
+		{
+			name:      "Repo return an error",
+			productId: 1,
+			repoErr:   errors.New("this is an error"),
+			want:      nil,
+			wantErr:   core.ErrInternalServerError.WithDebug(errors.New("this is an error").Error()),
 			assertion: assert.Error,
 		},
 	}
@@ -216,9 +217,9 @@ func (suite *ProductUsecaseTestSuite) TestGetProduct() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetProduct", tt.ctx, tt.productId).Return(tt.want, tt.repoErr)
+			suite.mockRepo.On("GetProduct", mock.Anything, tt.productId).Return(tt.want, tt.repoErr)
 
-			products, err := suite.usecase.GetProduct(tt.ctx, tt.productId)
+			products, err := suite.usecase.GetProduct(context.Background(), tt.productId)
 
 			assert.Equal(suite.T(), tt.want, products, "product should be retrieved correctly")
 
@@ -234,7 +235,6 @@ func (suite *ProductUsecaseTestSuite) TestGetProduct() {
 func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 	tests := []struct {
 		name      string
-		ctx       context.Context
 		productId int
 		data      entity.Product
 		repoErr   error
@@ -243,7 +243,6 @@ func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 	}{
 		{
 			name:      "Valid product",
-			ctx:       context.TODO(),
 			productId: 1,
 			data: entity.Product{
 				Id:       0,
@@ -257,7 +256,6 @@ func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 		},
 		{
 			name:      "Invalid product",
-			ctx:       context.TODO(),
 			productId: 1,
 			data:      entity.Product{},
 			repoErr:   core.ErrRecordNotFound,
@@ -270,9 +268,9 @@ func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("UpdateProduct", tt.ctx, tt.productId, tt.data).Return(tt.repoErr)
+			suite.mockRepo.On("UpdateProduct", mock.Anything, tt.productId, tt.data).Return(tt.repoErr)
 
-			err := suite.usecase.UpdateProduct(tt.ctx, tt.productId, tt.data)
+			err := suite.usecase.UpdateProduct(context.Background(), tt.productId, tt.data)
 
 			if tt.assertion(suite.T(), err) {
 				assert.ErrorIs(suite.T(), err, tt.want, "error should be return correctly")
@@ -286,7 +284,6 @@ func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 func (suite *ProductUsecaseTestSuite) TestDeleteProduct() {
 	tests := []struct {
 		name      string
-		ctx       context.Context
 		productId int
 		repoErr   error
 		want      error
@@ -294,7 +291,6 @@ func (suite *ProductUsecaseTestSuite) TestDeleteProduct() {
 	}{
 		{
 			name:      "Product exists",
-			ctx:       context.TODO(),
 			productId: 1,
 			repoErr:   nil,
 			want:      nil,
@@ -302,7 +298,6 @@ func (suite *ProductUsecaseTestSuite) TestDeleteProduct() {
 		},
 		{
 			name:      "Product does not exists",
-			ctx:       context.TODO(),
 			productId: 1,
 			repoErr:   core.ErrRecordNotFound,
 			want:      core.ErrBadRequest.WithError(entity.ErrCannotDelete.Error()).WithDebug(core.ErrRecordNotFound.Error()),
@@ -314,9 +309,9 @@ func (suite *ProductUsecaseTestSuite) TestDeleteProduct() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("DeleteProduct", tt.ctx, tt.productId).Return(tt.repoErr)
+			suite.mockRepo.On("DeleteProduct", mock.Anything, tt.productId).Return(tt.repoErr)
 
-			err := suite.usecase.DeleteProduct(tt.ctx, tt.productId)
+			err := suite.usecase.DeleteProduct(context.Background(), tt.productId)
 
 			if tt.assertion(suite.T(), err) {
 				assert.ErrorIs(suite.T(), err, tt.want, "error should be return correctly")

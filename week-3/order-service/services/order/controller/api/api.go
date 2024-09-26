@@ -77,9 +77,13 @@ func (srv *service) GetOrders(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
 
-	ctx := core.ContextWithRequester(c.Context(), requester)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return pkg.WriteResponse(c, core.ErrInternalServerError.WithDebug(err.Error()))
+	}
+	requesterId := int(uid.GetLocalID())
 
-	orders, err := srv.usecase.GetOrders(ctx)
+	orders, err := srv.usecase.GetOrders(c.Context(), requesterId)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -130,9 +134,13 @@ func (srv *service) GetOrder(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
 
-	ctx := core.ContextWithRequester(c.Context(), requester)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return pkg.WriteResponse(c, core.ErrInternalServerError.WithDebug(err.Error()))
+	}
+	requesterId := int(uid.GetLocalID())
 
-	order, err := srv.usecase.GetOrder(ctx, targetOrderId)
+	order, err := srv.usecase.GetOrder(c.Context(), requesterId, targetOrderId)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -151,9 +159,13 @@ func (srv *service) GetNumOfOrdersByMonth(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
 
-	ctx := core.ContextWithRequester(c.Context(), requester)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return pkg.WriteResponse(c, core.ErrInternalServerError.WithDebug(err.Error()))
+	}
+	requesterId := int(uid.GetLocalID())
 
-	orders, err := srv.usecase.GetNumOfOrdersByMonth(ctx)
+	orders, err := srv.usecase.GetNumOfOrdersByMonth(c.Context(), requesterId)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

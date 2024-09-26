@@ -19,7 +19,11 @@ run: build
 
 .PHONY: test
 test:
-	go test -count=1 ./services/user/test/... ./services/product/test/... ./services/order/test/... ./services/auth/test/...
+	go test -count=1 -coverprofile ./bin/cover.out ./services/...
+
+.PHONY: cover
+cover: test
+	go tool cover -html ./bin/cover.out -o cover.html && brave cover.html
 
 .PHONY: migrate
 migrate:
