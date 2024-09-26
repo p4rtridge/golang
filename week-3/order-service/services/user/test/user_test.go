@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -27,10 +26,10 @@ func (suite *UserTestSuite) SetupTest() {
 func (suite *UserTestSuite) TestNewUser() {
 	user := entity.NewUser(1, "partridge", "130703")
 
-	assert.Equal(suite.T(), 1, user.Id, "Id should be set correctly")
-	assert.Equal(suite.T(), "partridge", user.Username, "Username should be set correctly")
-	assert.Equal(suite.T(), "130703", user.Password, "Password should be set correctly")
-	assert.Equal(suite.T(), float32(0.0), user.Balance, "Balance should be set correctly")
+	suite.Equal(1, user.Id, "Id should be set correctly")
+	suite.Equal("partridge", user.Username, "Username should be set correctly")
+	suite.Equal("130703", user.Password, "Password should be set correctly")
+	suite.Equal(float32(0.0), user.Balance, "Balance should be set correctly")
 }
 
 func (suite *UserTestSuite) TestSetBalance() {
@@ -60,12 +59,12 @@ func (suite *UserTestSuite) TestSetBalance() {
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			if tt.panic {
-				assert.NotPanics(suite.T(), func() {
+				suite.NotPanics(func() {
 					tt.user.SetBalance(tt.balance)
 				}, "Calling SetBalance on nil user should not panic")
 			} else {
 				tt.user.SetBalance(tt.balance)
-				assert.Equal(suite.T(), tt.want, tt.user.Balance, "Balance should be updated")
+				suite.Equal(tt.want, tt.user.Balance, "Balance should be updated")
 			}
 		})
 	}
@@ -74,13 +73,13 @@ func (suite *UserTestSuite) TestSetBalance() {
 func (suite *UserTestSuite) TestGetId() {
 	got := suite.user.GetId()
 
-	assert.Equal(suite.T(), suite.user.Id, got, "Id should be retrieved correctly")
+	suite.Equal(suite.user.Id, got, "Id should be retrieved correctly")
 }
 
 func (suite *UserTestSuite) TestGetBalance() {
 	got := suite.user.GetBalance()
 
-	assert.Equal(suite.T(), suite.user.Balance, got, "Balance should be retrieved correctly")
+	suite.Equal(suite.user.Balance, got, "Balance should be retrieved correctly")
 }
 
 func TestUserTestSuite(t *testing.T) {

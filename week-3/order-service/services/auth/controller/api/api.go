@@ -34,7 +34,11 @@ func (srv *service) Register(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err := srv.usecase.Register(c.Context(), &data)
+	if err := data.Validate(); err != nil {
+		return pkg.WriteResponse(c, err)
+	}
+
+	err := srv.usecase.Register(c.Context(), data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -50,10 +54,10 @@ func (srv *service) Login(c *fiber.Ctx) error {
 	}
 
 	if err := data.Validate(); err != nil {
-		return core.ErrBadRequest.WithError(err.Error())
+		return pkg.WriteResponse(c, err)
 	}
 
-	response, err := srv.usecase.Login(c.Context(), &data)
+	response, err := srv.usecase.Login(c.Context(), data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -68,7 +72,7 @@ func (srv *service) Refresh(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
-	response, err := srv.usecase.Refresh(c.Context(), &data)
+	response, err := srv.usecase.Refresh(c.Context(), data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -89,7 +93,7 @@ func (srv *service) SignOut(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
-	err := srv.usecase.SignOut(ctx, &data)
+	err := srv.usecase.SignOut(ctx, data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

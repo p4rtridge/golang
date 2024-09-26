@@ -4,7 +4,6 @@ import (
 	"order_service/services/auth/entity"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -23,8 +22,8 @@ func (suite *AuthTestSuite) SetupTest() {
 func (suite *AuthTestSuite) TestNewAuth() {
 	auth := entity.NewAuth("partridge", "130703")
 
-	assert.Equal(suite.T(), "partridge", auth.Username, "Username should be set correctly")
-	assert.Equal(suite.T(), "130703", auth.Password, "Password should be set correctly")
+	suite.Equal("partridge", auth.Username, "Username should be set correctly")
+	suite.Equal("130703", auth.Password, "Password should be set correctly")
 }
 
 func TestAuthTestSuite(t *testing.T) {

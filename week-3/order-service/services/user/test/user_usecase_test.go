@@ -82,10 +82,10 @@ func (suite *UserUsecaseTestSuite) TestGetUsers() {
 
 			users, err := suite.usecase.GetUsers(context.Background())
 
-			assert.Equal(suite.T(), tt.want, users, "users should be retrieved correctly")
+			suite.Equal(tt.want, users, "users should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be return correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be return correctly")
 			}
 		})
 	}
@@ -134,10 +134,10 @@ func (suite *UserUsecaseTestSuite) TestGetUser() {
 
 			user, err := suite.usecase.GetUser(context.Background(), tt.userId)
 
-			assert.Equal(suite.T(), tt.want, user, "user should be retrieved correctly")
+			suite.Equal(tt.want, user, "user should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be return correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be return correctly")
 			}
 		})
 	}
@@ -179,7 +179,7 @@ func (suite *UserUsecaseTestSuite) TestAddUserBalance() {
 			err := suite.usecase.AddUserBalance(context.Background(), tt.userId, tt.balance)
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.want, "error should be return correctly")
+				suite.ErrorIs(err, tt.want, "error should be return correctly")
 			}
 		})
 	}
@@ -220,10 +220,10 @@ func (suite *UserUsecaseTestSuite) TestGetUserProfile() {
 
 			user, err := suite.usecase.GetUserProfile(context.Background(), tt.userId)
 
-			assert.Equal(suite.T(), tt.want, user, "user should be retrieved correctly")
+			suite.Equal(tt.want, user, "user should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be return correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be return correctly")
 			}
 		})
 	}

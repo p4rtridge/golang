@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -28,10 +27,10 @@ func (suite *ProductTestSuite) SetupTest() {
 func (suite *ProductTestSuite) TestNewProduct() {
 	product := entity.NewProduct(1, "orange", 10, 2.5)
 
-	assert.Equal(suite.T(), 1, product.Id, "Id should be set correctly")
-	assert.Equal(suite.T(), "orange", product.Name, "Name should be set correctly")
-	assert.Equal(suite.T(), 10, product.Quantity, "Quantity should be set correctly")
-	assert.Equal(suite.T(), float32(2.5), product.Price, "Price should be set correctly")
+	suite.Equal(1, product.Id, "Id should be set correctly")
+	suite.Equal("orange", product.Name, "Name should be set correctly")
+	suite.Equal(10, product.Quantity, "Quantity should be set correctly")
+	suite.Equal(float32(2.5), product.Price, "Price should be set correctly")
 }
 
 func (suite *ProductTestSuite) TestSetId() {
@@ -61,7 +60,7 @@ func (suite *ProductTestSuite) TestSetId() {
 	for _, tt := range tests {
 		if tt.panic {
 			suite.Run(tt.name, func() {
-				assert.NotPanics(suite.T(), func() {
+				suite.NotPanics(func() {
 					tt.product.SetId(tt.id)
 				}, "Calling SetId on nil product should not panic")
 			})
@@ -69,7 +68,7 @@ func (suite *ProductTestSuite) TestSetId() {
 			suite.Run(tt.name, func() {
 				tt.product.SetId(tt.id)
 
-				assert.Equal(suite.T(), tt.want, tt.product.Id, "Id should be updated")
+				suite.Equal(tt.want, tt.product.Id, "Id should be updated")
 			})
 		}
 	}
@@ -102,14 +101,14 @@ func (suite *ProductTestSuite) TestSetQuantity() {
 	for _, tt := range tests {
 		if tt.panic {
 			suite.Run(tt.name, func() {
-				assert.NotPanics(suite.T(), func() {
+				suite.NotPanics(func() {
 					tt.product.SetQuantity(tt.quantity)
 				}, "Calling SetQuantity on nil should no panic")
 			})
 		} else {
 			tt.product.SetQuantity(tt.quantity)
 
-			assert.Equal(suite.T(), tt.want, tt.product.Quantity, "Quantity should be updated")
+			suite.Equal(tt.want, tt.product.Quantity, "Quantity should be updated")
 		}
 	}
 }
@@ -117,25 +116,25 @@ func (suite *ProductTestSuite) TestSetQuantity() {
 func (suite *ProductTestSuite) TestGetId() {
 	got := suite.product.GetId()
 
-	assert.Equal(suite.T(), suite.product.Id, got, "Id should be retrieved correctly")
+	suite.Equal(suite.product.Id, got, "Id should be retrieved correctly")
 }
 
 func (suite *ProductTestSuite) TestGetName() {
 	got := suite.product.GetName()
 
-	assert.Equal(suite.T(), suite.product.Name, got, "Name should be retrieved correctly")
+	suite.Equal(suite.product.Name, got, "Name should be retrieved correctly")
 }
 
 func (suite *ProductTestSuite) TestGetQuantity() {
 	got := suite.product.GetQuantity()
 
-	assert.Equal(suite.T(), suite.product.Quantity, got, "Quantity should be retrieved correctly")
+	suite.Equal(suite.product.Quantity, got, "Quantity should be retrieved correctly")
 }
 
 func (suite *ProductTestSuite) TestGetPrice() {
 	got := suite.product.GetPrice()
 
-	assert.Equal(suite.T(), suite.product.Price, got, "Price should be retrieved correctly")
+	suite.Equal(suite.product.Price, got, "Price should be retrieved correctly")
 }
 
 func TestProductTestSuite(t *testing.T) {

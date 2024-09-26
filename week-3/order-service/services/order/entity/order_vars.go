@@ -30,11 +30,7 @@ func (data OrderRequest) Validate() error {
 	}
 
 	for _, item := range data.Items {
-		if item.ProductId == 0 {
-			return ErrMissingField
-		}
-
-		if item.Quantity == 0 {
+		if item.ProductId == 0 || item.Quantity == 0 {
 			return ErrMissingField
 		}
 	}

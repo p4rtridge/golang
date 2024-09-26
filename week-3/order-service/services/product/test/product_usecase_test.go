@@ -5,54 +5,21 @@ import (
 	"errors"
 	"order_service/internal/core"
 	"order_service/services/product/entity"
+	"order_service/services/product/test/mock"
 	"order_service/services/product/usecase"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
-
-type mockProductRepo struct {
-	mock.Mock
-}
-
-func (mock *mockProductRepo) CreateProduct(ctx context.Context, data entity.Product) error {
-	args := mock.Called(ctx, data)
-
-	return args.Error(0)
-}
-
-func (mock *mockProductRepo) GetProducts(ctx context.Context) (*[]entity.Product, error) {
-	args := mock.Called(ctx)
-
-	return args.Get(0).(*[]entity.Product), args.Error(1)
-}
-
-func (mock *mockProductRepo) GetProduct(ctx context.Context, productId int) (*entity.Product, error) {
-	args := mock.Called(ctx, productId)
-
-	return args.Get(0).(*entity.Product), args.Error(1)
-}
-
-func (mock *mockProductRepo) UpdateProduct(ctx context.Context, productId int, data entity.Product) error {
-	args := mock.Called(ctx, productId, data)
-
-	return args.Error(0)
-}
-
-func (mock *mockProductRepo) DeleteProduct(ctx context.Context, productId int) error {
-	args := mock.Called(ctx, productId)
-
-	return args.Error(0)
-}
 
 type ProductUsecaseTestSuite struct {
 	suite.Suite
 
 	products *[]entity.Product
-	mockRepo *mockProductRepo
+	mockRepo *mock.MockProductRepository
 	usecase  usecase.ProductUsecase
 }
 
@@ -74,7 +41,9 @@ func (suite *ProductUsecaseTestSuite) SetupTest() {
 		},
 	}
 
-	suite.mockRepo = new(mockProductRepo)
+	ctrl := gomock.NewController(suite.T())
+
+	suite.mockRepo = mock.NewMockProductRepository(ctrl)
 	suite.usecase = usecase.NewUsecase(suite.mockRepo)
 }
 
@@ -115,15 +84,13 @@ func (suite *ProductUsecaseTestSuite) TestCreateProduct() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("CreateProduct", tt.ctx, tt.data).Return(tt.repoErr)
+			suite.mockRepo.EXPECT().CreateProduct(gomock.Any(), tt.data).Return(tt.repoErr)
 
 			err := suite.usecase.CreateProduct(tt.ctx, tt.data)
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.want, "error should be return correctly")
+				suite.ErrorIs(err, tt.want, "error should be return correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -163,17 +130,15 @@ func (suite *ProductUsecaseTestSuite) TestGetProducts() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetProducts", mock.Anything).Return(tt.want, tt.repoErr)
+			suite.mockRepo.EXPECT().GetProducts(gomock.Any()).Return(tt.want, tt.repoErr)
 
 			products, err := suite.usecase.GetProducts(context.Background())
 
-			assert.Equal(suite.T(), tt.want, products, "products should be retrieved correctly")
+			suite.Equal(tt.want, products, "products should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be return correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be return correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -217,17 +182,15 @@ func (suite *ProductUsecaseTestSuite) TestGetProduct() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetProduct", mock.Anything, tt.productId).Return(tt.want, tt.repoErr)
+			suite.mockRepo.EXPECT().GetProduct(gomock.Any(), tt.productId).Return(tt.want, tt.repoErr)
 
 			products, err := suite.usecase.GetProduct(context.Background(), tt.productId)
 
-			assert.Equal(suite.T(), tt.want, products, "product should be retrieved correctly")
+			suite.Equal(tt.want, products, "product should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be return correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be return correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -268,15 +231,13 @@ func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("UpdateProduct", mock.Anything, tt.productId, tt.data).Return(tt.repoErr)
+			suite.mockRepo.EXPECT().UpdateProduct(gomock.Any(), tt.productId, tt.data).Return(tt.repoErr)
 
 			err := suite.usecase.UpdateProduct(context.Background(), tt.productId, tt.data)
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.want, "error should be return correctly")
+				suite.ErrorIs(err, tt.want, "error should be return correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -309,15 +270,13 @@ func (suite *ProductUsecaseTestSuite) TestDeleteProduct() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("DeleteProduct", mock.Anything, tt.productId).Return(tt.repoErr)
+			suite.mockRepo.EXPECT().DeleteProduct(gomock.Any(), tt.productId).Return(tt.repoErr)
 
 			err := suite.usecase.DeleteProduct(context.Background(), tt.productId)
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.want, "error should be return correctly")
+				suite.ErrorIs(err, tt.want, "error should be return correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }

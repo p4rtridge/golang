@@ -5,6 +5,7 @@ import (
 	"errors"
 	"order_service/internal/core"
 	orderEntity "order_service/services/order/entity"
+	"order_service/services/order/test/mock"
 	"order_service/services/order/usecase"
 	productEntity "order_service/services/product/entity"
 	userEntity "order_service/services/user/entity"
@@ -12,58 +13,20 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
-
-type mockOrderRepo struct {
-	mock.Mock
-}
-
-func (mock *mockOrderRepo) CreateOrder(ctx context.Context, order *orderEntity.Order, callbackFn func(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error)) error {
-	args := mock.Called(ctx, order, callbackFn)
-
-	return args.Error(0)
-}
-
-func (mock *mockOrderRepo) GetOrders(ctx context.Context, userId int) (*[]orderEntity.Order, error) {
-	args := mock.Called(ctx, userId)
-
-	return args.Get(0).(*[]orderEntity.Order), args.Error(1)
-}
-
-func (mock *mockOrderRepo) GetOrdersSummarize(ctx context.Context, startDate, endDate time.Time) (*[]orderEntity.OrdersSummarize, error) {
-	args := mock.Called(ctx, startDate, endDate)
-
-	return args.Get(0).(*[]orderEntity.OrdersSummarize), args.Error(1)
-}
-
-func (mock *mockOrderRepo) GetTopFiveOrdersByPrice(ctx context.Context) (*[]orderEntity.Order, error) {
-	args := mock.Called(ctx)
-
-	return args.Get(0).(*[]orderEntity.Order), args.Error(1)
-}
-
-func (mock *mockOrderRepo) GetNumOfOrdersPerMonth(ctx context.Context, userId int) (*[]orderEntity.AggregatedOrdersByMonth, error) {
-	args := mock.Called(ctx, userId)
-
-	return args.Get(0).(*[]orderEntity.AggregatedOrdersByMonth), args.Error(1)
-}
-
-func (mock *mockOrderRepo) GetOrder(ctx context.Context, userId, orderId int) (*orderEntity.Order, error) {
-	args := mock.Called(ctx, userId, orderId)
-
-	return args.Get(0).(*orderEntity.Order), args.Error(1)
-}
 
 type OrderUsecaseTestSuite struct {
 	suite.Suite
-	mockRepo *mockOrderRepo
+	mockRepo *mock.MockOrderRepository
 	usecase  usecase.OrderUsecase
 }
 
 func (suite *OrderUsecaseTestSuite) SetupTest() {
-	suite.mockRepo = new(mockOrderRepo)
+	ctrl := gomock.NewController(suite.T())
+
+	suite.mockRepo = mock.NewMockOrderRepository(ctrl)
 	suite.usecase = usecase.NewUsecase(suite.mockRepo)
 }
 
@@ -150,15 +113,13 @@ func (suite *OrderUsecaseTestSuite) TestCreateOrder() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("CreateOrder", mock.Anything, tt.order, mock.Anything).Return(tt.repoErr)
+			suite.mockRepo.EXPECT().CreateOrder(gomock.Any(), tt.order, gomock.Any()).Return(tt.repoErr)
 
 			err := suite.usecase.CreateOrder(context.Background(), tt.order)
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.want, "error should return correctly")
+				suite.ErrorIs(err, tt.want, "error should return correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -326,10 +287,10 @@ func (suite *OrderUsecaseTestSuite) TestCreateOrderCallback() {
 
 			accept, err := suite.usecase.CreateOrderCallback(tt.order, tt.user, tt.products)
 
-			assert.Equal(suite.T(), tt.want, accept, "first return argument must be equal")
+			suite.Equal(tt.want, accept, "first return argument must be equal")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be return correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be return correctly")
 			}
 		})
 	}
@@ -381,17 +342,15 @@ func (suite *OrderUsecaseTestSuite) TestGetOrders() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetOrders", mock.Anything, tt.userId).Return(tt.want, tt.repoErr)
+			suite.mockRepo.EXPECT().GetOrders(gomock.Any(), tt.userId).Return(tt.want, tt.repoErr)
 
 			orders, err := suite.usecase.GetOrders(context.Background(), tt.userId)
 
-			assert.Equal(suite.T(), tt.want, orders, "orders should be retrieved correctly")
+			suite.Equal(tt.want, orders, "orders should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be return correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be return correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -439,17 +398,15 @@ func (suite *OrderUsecaseTestSuite) TestGetTopFiveOrdersByPrice() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetTopFiveOrdersByPrice", mock.Anything).Return(tt.want, tt.repoErr)
+			suite.mockRepo.EXPECT().GetTopFiveOrdersByPrice(gomock.Any()).Return(tt.want, tt.repoErr)
 
 			orders, err := suite.usecase.GetTopFiveOrdersByPrice(context.Background())
 
-			assert.Equal(suite.T(), tt.want, orders, "orders should be retrieved correctly")
+			suite.Equal(tt.want, orders, "orders should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be returned correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be returned correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -490,17 +447,15 @@ func (suite *OrderUsecaseTestSuite) TestGetNumOfOrdersByMonth() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetNumOfOrdersPerMonth", mock.Anything, tt.userId).Return(tt.want, tt.repoErr)
+			suite.mockRepo.EXPECT().GetNumOfOrdersPerMonth(gomock.Any(), tt.userId).Return(tt.want, tt.repoErr)
 
 			orders, err := suite.usecase.GetNumOfOrdersByMonth(context.Background(), tt.userId)
 
-			assert.Equal(suite.T(), tt.want, orders, "orders should be retrieved correctly")
+			suite.Equal(tt.want, orders, "orders should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be returned correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be returned correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -546,17 +501,15 @@ func (suite *OrderUsecaseTestSuite) TestGetOrdersSummarize() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetOrdersSummarize", mock.Anything, tt.startDate, tt.endDate).Return(tt.want, tt.repoErr)
+			suite.mockRepo.EXPECT().GetOrdersSummarize(gomock.Any(), tt.startDate, tt.endDate).Return(tt.want, tt.repoErr)
 
 			orders, err := suite.usecase.GetOrdersSummarize(context.Background(), tt.startDate, tt.endDate)
 
-			assert.Equal(suite.T(), tt.want, orders, "orders should be retrieved correctly")
+			suite.Equal(tt.want, orders, "orders should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be returned correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be returned correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -607,17 +560,15 @@ func (suite *OrderUsecaseTestSuite) TestGetOrder() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.On("GetOrder", mock.Anything, tt.userId, tt.orderId).Return(tt.want, tt.repoErr)
+			suite.mockRepo.EXPECT().GetOrder(gomock.Any(), tt.userId, tt.orderId).Return(tt.want, tt.repoErr)
 
 			orders, err := suite.usecase.GetOrder(context.Background(), tt.userId, tt.orderId)
 
-			assert.Equal(suite.T(), tt.want, orders, "order should be retrieved correctly")
+			suite.Equal(tt.want, orders, "order should be retrieved correctly")
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.wantErr, "error should be returned correctly")
+				suite.ErrorIs(err, tt.wantErr, "error should be returned correctly")
 			}
-
-			suite.mockRepo.AssertExpectations(suite.T())
 		})
 	}
 }

@@ -84,7 +84,7 @@ func (pool *WorkerPool) worker(id int, jobs <-chan Job, result chan<- Result, wg
 }
 
 func (pool *WorkerPool) processLogin(job Job) (*entity.TokenResponse, error) {
-	data, ok := job.Data.(*entity.AuthLogin)
+	data, ok := job.Data.(entity.AuthLogin)
 	if !ok {
 		return nil, errors.New("cannot be parse")
 	}

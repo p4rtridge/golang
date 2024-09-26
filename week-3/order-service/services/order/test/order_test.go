@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -58,10 +57,10 @@ func (suite *OrderTestSuite) TestNewOrder() {
 
 	order := entity.NewOrder(1, 1, 100, items)
 
-	assert.Equal(suite.T(), 1, order.Id, "Id should be set correctly")
-	assert.Equal(suite.T(), 1, order.UserId, "User Id should be set correctly")
-	assert.Equal(suite.T(), float32(100), order.TotalPrice, "TotalPrice should be set correctly")
-	assert.Equal(suite.T(), items, order.Items, "Order's Items should be set correctly")
+	suite.Equal(1, order.Id, "Id should be set correctly")
+	suite.Equal(1, order.UserId, "User Id should be set correctly")
+	suite.Equal(float32(100), order.TotalPrice, "TotalPrice should be set correctly")
+	suite.Equal(items, order.Items, "Order's Items should be set correctly")
 }
 
 func (suite *OrderTestSuite) TestSetId() {
@@ -90,13 +89,13 @@ func (suite *OrderTestSuite) TestSetId() {
 
 	for _, tt := range tests {
 		if tt.panic {
-			assert.NotPanics(suite.T(), func() {
+			suite.NotPanics(func() {
 				tt.order.SetId(tt.id)
 			}, "Calling SetId on nil order should not be panic")
 		} else {
 			tt.order.SetId(tt.id)
 
-			assert.Equal(suite.T(), tt.want, tt.order.Id, "Id should be updated")
+			suite.Equal(tt.want, tt.order.Id, "Id should be updated")
 		}
 	}
 }
@@ -127,13 +126,13 @@ func (suite *OrderTestSuite) TestSetUserId() {
 
 	for _, tt := range tests {
 		if tt.panic {
-			assert.NotPanics(suite.T(), func() {
+			suite.NotPanics(func() {
 				tt.order.SetUserId(tt.userId)
 			}, "Calling SetUserId on nil order should not be panic")
 		} else {
 			tt.order.SetUserId(tt.userId)
 
-			assert.Equal(suite.T(), tt.want, tt.order.UserId, "UserId should be updated")
+			suite.Equal(tt.want, tt.order.UserId, "UserId should be updated")
 		}
 	}
 }
@@ -164,13 +163,13 @@ func (suite *OrderTestSuite) TestSetTotalPrice() {
 
 	for _, tt := range tests {
 		if tt.panic {
-			assert.NotPanics(suite.T(), func() {
+			suite.NotPanics(func() {
 				tt.order.SetTotalPrice(tt.totalPrice)
 			}, "Calling SetTotalPrice on nil order should not be panic")
 		} else {
 			tt.order.SetTotalPrice(tt.totalPrice)
 
-			assert.Equal(suite.T(), tt.want, tt.order.TotalPrice, "TotalPrice should be updated")
+			suite.Equal(tt.want, tt.order.TotalPrice, "TotalPrice should be updated")
 		}
 	}
 }
@@ -203,13 +202,13 @@ func (suite *OrderTestSuite) TestSetCreatedAt() {
 
 	for _, tt := range tests {
 		if tt.panic {
-			assert.NotPanics(suite.T(), func() {
+			suite.NotPanics(func() {
 				tt.order.SetCreatedAt(tt.createdAt)
 			}, "Calling SetCreatedAt on nil order should not be panic")
 		} else {
 			tt.order.SetCreatedAt(tt.createdAt)
 
-			assert.Equal(suite.T(), tt.want, tt.order.CreatedAt, "CreatedAt should be updated")
+			suite.Equal(tt.want, tt.order.CreatedAt, "CreatedAt should be updated")
 		}
 	}
 }
@@ -242,13 +241,13 @@ func (suite *OrderTestSuite) TestSetUpdatedAt() {
 
 	for _, tt := range tests {
 		if tt.panic {
-			assert.NotPanics(suite.T(), func() {
+			suite.NotPanics(func() {
 				tt.order.SetUpdatedAt(&tt.updatedAt)
 			}, "Calling SetUpdatedAt on nil order should not be panic")
 		} else {
 			tt.order.SetUpdatedAt(&tt.updatedAt)
 
-			assert.Equal(suite.T(), tt.want, *tt.order.UpdatedAt, "UpdatedAt should be updated")
+			suite.Equal(tt.want, *tt.order.UpdatedAt, "UpdatedAt should be updated")
 		}
 	}
 }
@@ -287,13 +286,13 @@ func (suite *OrderTestSuite) TestAddItem_NonNilOrder() {
 
 	for _, tt := range tests {
 		if tt.panic {
-			assert.NotPanics(suite.T(), func() {
+			suite.NotPanics(func() {
 				tt.order.AddItem(tt.item)
 			}, "Calling AddItem on nil order should not be panic")
 		} else {
 			tt.order.AddItem(tt.item)
 
-			assert.Equal(suite.T(), tt.want, tt.order.Items[len(tt.order.Items)-1], "Item should be updated")
+			suite.Equal(tt.want, tt.order.Items[len(tt.order.Items)-1], "Item should be updated")
 		}
 	}
 }
@@ -319,7 +318,7 @@ func (suite *OrderTestSuite) TestGetIdSafe() {
 	for _, tt := range tests {
 		got := tt.order.GetIdSafe()
 
-		assert.Equal(suite.T(), tt.want, got, "Id should be retrieved correctly")
+		suite.Equal(tt.want, got, "Id should be retrieved correctly")
 	}
 }
 
@@ -344,7 +343,7 @@ func (suite *OrderTestSuite) TestGetUserIdSafe() {
 	for _, tt := range tests {
 		got := tt.order.GetUserIdSafe()
 
-		assert.Equal(suite.T(), tt.want, got, "UserId should be retrieved correctly")
+		suite.Equal(tt.want, got, "UserId should be retrieved correctly")
 	}
 }
 
@@ -369,7 +368,7 @@ func (suite *OrderTestSuite) TestGetTotalPriceSafe() {
 	for _, tt := range tests {
 		got := tt.order.GetTotalPriceSafe()
 
-		assert.Equal(suite.T(), tt.want, got, "TotalPrice should be retrieved correctly")
+		suite.Equal(tt.want, got, "TotalPrice should be retrieved correctly")
 	}
 }
 
@@ -394,7 +393,7 @@ func (suite *OrderTestSuite) TestGetItemsSafe() {
 	for _, tt := range tests {
 		got := tt.order.GetItemsSafe()
 
-		assert.Equal(suite.T(), tt.want, got, "Items should be retrieved correctly")
+		suite.Equal(tt.want, got, "Items should be retrieved correctly")
 	}
 }
 
@@ -422,7 +421,7 @@ func (suite *OrderTestSuite) TestGetItemSafe() {
 	for _, tt := range tests {
 		got := tt.order.GetItemSafe(tt.index)
 
-		assert.Equal(suite.T(), tt.want, got, "Item should be retrieved correctly")
+		suite.Equal(tt.want, got, "Item should be retrieved correctly")
 	}
 }
 

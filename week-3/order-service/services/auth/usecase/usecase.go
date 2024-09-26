@@ -12,11 +12,11 @@ import (
 )
 
 type AuthUseCase interface {
-	Register(ctx context.Context, data *authEntity.AuthUsernamePassword) error
-	Login(ctx context.Context, data *authEntity.AuthLogin) (*authEntity.TokenResponse, error)
+	Register(ctx context.Context, data authEntity.AuthUsernamePassword) error
+	Login(ctx context.Context, data authEntity.AuthLogin) (*authEntity.TokenResponse, error)
 	Verify(ctx context.Context, token string) (string, string, error)
-	Refresh(ctx context.Context, data *authEntity.RefreshTokenRequest) (*authEntity.TokenResponse, error)
-	SignOut(ctx context.Context, data *authEntity.AuthSignOut) error
+	Refresh(ctx context.Context, data authEntity.RefreshTokenRequest) (*authEntity.TokenResponse, error)
+	SignOut(ctx context.Context, data authEntity.AuthSignOut) error
 	SignOutAll(ctx context.Context) error
 }
 
@@ -36,7 +36,7 @@ func NewUsecase(repo authRepo.AuthRepository, tokenRepo tokenRepo.TokenRepositor
 	}
 }
 
-func (uc *authUsecase) Register(ctx context.Context, data *authEntity.AuthUsernamePassword) error {
+func (uc *authUsecase) Register(ctx context.Context, data authEntity.AuthUsernamePassword) error {
 	authData, err := uc.repo.GetAuth(ctx, data.Username)
 
 	if err == nil && authData != nil {
@@ -53,18 +53,14 @@ func (uc *authUsecase) Register(ctx context.Context, data *authEntity.AuthUserna
 
 	newAuth := authEntity.NewAuth(data.Username, hashedPassword)
 
-	if err := uc.repo.AddAuth(ctx, &newAuth); err != nil {
+	if err := uc.repo.AddAuth(ctx, newAuth); err != nil {
 		return core.ErrInternalServerError.WithError(authEntity.ErrCannotRegister.Error()).WithDebug(err.Error())
 	}
 
 	return nil
 }
 
-func (uc *authUsecase) Login(ctx context.Context, data *authEntity.AuthLogin) (*authEntity.TokenResponse, error) {
-	if err := data.Validate(); err != nil {
-		return nil, core.ErrBadRequest.WithError(err.Error())
-	}
-
+func (uc *authUsecase) Login(ctx context.Context, data authEntity.AuthLogin) (*authEntity.TokenResponse, error) {
 	authData, err := uc.repo.GetAuth(ctx, data.Username)
 	if err != nil {
 		if err == core.ErrRecordNotFound {
@@ -121,7 +117,7 @@ func (uc *authUsecase) Verify(ctx context.Context, token string) (string, string
 	return claims.Subject, claims.ID, nil
 }
 
-func (uc *authUsecase) Refresh(ctx context.Context, data *authEntity.RefreshTokenRequest) (*authEntity.TokenResponse, error) {
+func (uc *authUsecase) Refresh(ctx context.Context, data authEntity.RefreshTokenRequest) (*authEntity.TokenResponse, error) {
 	claims, err := uc.jwt.ParseToken(ctx, data.RefreshToken)
 	if err != nil {
 		return nil, core.ErrBadRequest.WithError(authEntity.ErrRefreshFailed.Error()).WithDebug(err.Error())
@@ -173,7 +169,7 @@ func (uc *authUsecase) Refresh(ctx context.Context, data *authEntity.RefreshToke
 	}, nil
 }
 
-func (uc *authUsecase) SignOut(ctx context.Context, data *authEntity.AuthSignOut) error {
+func (uc *authUsecase) SignOut(ctx context.Context, data authEntity.AuthSignOut) error {
 	if err := data.Validate(); err != nil {
 		return core.ErrUnauthorized.WithError(err.Error())
 	}

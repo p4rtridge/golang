@@ -40,6 +40,19 @@ func (suite *OrderVarsTestSuite) TestValidate() {
 			want:      entity.ErrItemEmpty,
 			assertion: assert.Error,
 		},
+		{
+			name: "Zero value order item",
+			order: entity.OrderRequest{
+				Items: []entity.ProductItem{
+					{
+						ProductId: 0,
+						Quantity:  1,
+					},
+				},
+			},
+			want:      entity.ErrMissingField,
+			assertion: assert.Error,
+		},
 	}
 
 	for _, tt := range tests {
@@ -47,8 +60,89 @@ func (suite *OrderVarsTestSuite) TestValidate() {
 			err := tt.order.Validate()
 
 			if tt.assertion(suite.T(), err) {
-				assert.ErrorIs(suite.T(), err, tt.want, "error should be return correctly")
+				suite.ErrorIs(err, tt.want, "error should be return correctly")
 			}
+		})
+	}
+}
+
+func (suite *OrderVarsTestSuite) TestGetItems() {
+	orderReq := entity.OrderRequest{
+		Items: []entity.ProductItem{
+			{
+				ProductId: 1,
+				Quantity:  1,
+			},
+		},
+	}
+
+	tests := []struct {
+		name  string
+		order entity.OrderRequest
+		want  []entity.ProductItem
+	}{
+		{
+			name:  "Order items exists",
+			order: orderReq,
+			want:  orderReq.Items,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			items := tt.order.GetItems()
+
+			suite.Equal(tt.want, items, "items should be retrieved correctly")
+		})
+	}
+}
+
+func (suite *OrderVarsTestSuite) TestGetItemId() {
+	tests := []struct {
+		name string
+		item entity.ProductItem
+		want int
+	}{
+		{
+			name: "Order items exists",
+			item: entity.ProductItem{
+				ProductId: 1,
+				Quantity:  1,
+			},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			id := tt.item.GetItemId()
+
+			suite.Equal(tt.want, id, "id should be retrieved correctly")
+		})
+	}
+}
+
+func (suite *OrderVarsTestSuite) TestGetItemQuantity() {
+	tests := []struct {
+		name string
+		item entity.ProductItem
+		want int
+	}{
+		{
+			name: "Order items exists",
+			item: entity.ProductItem{
+				ProductId: 1,
+				Quantity:  1,
+			},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			quantity := tt.item.GetItemQuantity()
+
+			suite.Equal(tt.want, quantity, "quantity should be retrieved correctly")
 		})
 	}
 }
