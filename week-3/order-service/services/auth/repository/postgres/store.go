@@ -15,7 +15,7 @@ type AuthRepository interface {
 	GetAuth(ctx context.Context, username string) (*userEntity.User, error)
 }
 
-var (
+const (
 	QUERY_GET_USER_BY_USERNAME = "SELECT * FROM users WHERE username = $1"
 	QUERY_INSERT_USER          = "INSERT INTO users (username, password) VALUES ($1, $2)"
 )

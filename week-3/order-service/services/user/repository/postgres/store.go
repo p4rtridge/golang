@@ -15,7 +15,7 @@ type UserRepository interface {
 	AddUserBalanceById(ctx context.Context, userId int, balance float32) error
 }
 
-var (
+const (
 	QUERY_GET_USER_BY_ID            = "SELECT * FROM users WHERE id = $1"
 	QUERY_GET_USERS                 = "SELECT * FROM users"
 	QUERY_UPDATE_USER_BALANCE_BY_ID = "UPDATE users SET balance = COALESCE(balance, 0.0) + $2 WHERE id = $1"

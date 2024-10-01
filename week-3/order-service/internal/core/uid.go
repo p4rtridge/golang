@@ -17,12 +17,12 @@ func NewUID(localID uint32) UID {
 	}
 }
 
-func (uid *UID) String() string {
+func (uid UID) String() string {
 	value := uint64(uid.localID) << 31
 	return base64.RawStdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", value)))
 }
 
-func (uid *UID) GetLocalID() uint32 {
+func (uid UID) GetLocalID() uint32 {
 	return uid.localID
 }
 

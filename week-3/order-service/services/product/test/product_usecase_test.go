@@ -18,9 +18,10 @@ import (
 type ProductUsecaseTestSuite struct {
 	suite.Suite
 
-	products *[]entity.Product
-	mockRepo *mock.MockProductRepository
-	usecase  usecase.ProductUsecase
+	products    *[]entity.Product
+	mockRepo    *mock.MockProductRepository
+	mockAWSRepo *mock.MockAWSClient
+	usecase     usecase.ProductUsecase
 }
 
 func (suite *ProductUsecaseTestSuite) SetupTest() {
@@ -44,14 +45,15 @@ func (suite *ProductUsecaseTestSuite) SetupTest() {
 	ctrl := gomock.NewController(suite.T())
 
 	suite.mockRepo = mock.NewMockProductRepository(ctrl)
-	suite.usecase = usecase.NewUsecase(suite.mockRepo)
+	suite.mockAWSRepo = mock.NewMockAWSClient(ctrl)
+	suite.usecase = usecase.NewUsecase(suite.mockRepo, suite.mockAWSRepo)
 }
 
 func (suite *ProductUsecaseTestSuite) TestCreateProduct() {
 	tests := []struct {
 		name      string
 		ctx       context.Context
-		data      entity.Product
+		data      *entity.ProductRequest
 		repoErr   error
 		want      error
 		assertion assert.ErrorAssertionFunc
@@ -59,12 +61,10 @@ func (suite *ProductUsecaseTestSuite) TestCreateProduct() {
 		{
 			name: "Valid product",
 			ctx:  context.TODO(),
-			data: entity.Product{
-				Id:        1,
-				Name:      "orange",
-				Quantity:  25,
-				Price:     2.5,
-				CreatedAt: time.Now(),
+			data: &entity.ProductRequest{
+				Name:     "orange",
+				Quantity: 25,
+				Price:    2.5,
 			},
 			repoErr:   nil,
 			want:      nil,
@@ -73,7 +73,7 @@ func (suite *ProductUsecaseTestSuite) TestCreateProduct() {
 		{
 			name:      "Invalid product",
 			ctx:       context.TODO(),
-			data:      entity.Product{},
+			data:      &entity.ProductRequest{},
 			repoErr:   errors.New("an error occur while creating product"),
 			want:      core.ErrInternalServerError.WithError(entity.ErrCannotCreate.Error()).WithDebug(errors.New("an error occur while creating product").Error()),
 			assertion: assert.Error,
@@ -199,7 +199,7 @@ func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 	tests := []struct {
 		name      string
 		productId int
-		data      entity.Product
+		data      *entity.ProductRequest
 		repoErr   error
 		want      error
 		assertion assert.ErrorAssertionFunc
@@ -207,8 +207,7 @@ func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 		{
 			name:      "Valid product",
 			productId: 1,
-			data: entity.Product{
-				Id:       0,
+			data: &entity.ProductRequest{
 				Name:     "apple",
 				Quantity: 25,
 				Price:    5.5,
@@ -220,7 +219,7 @@ func (suite *ProductUsecaseTestSuite) TestUpdateProduct() {
 		{
 			name:      "Invalid product",
 			productId: 1,
-			data:      entity.Product{},
+			data:      &entity.ProductRequest{},
 			repoErr:   core.ErrRecordNotFound,
 			want:      core.ErrInternalServerError.WithError(entity.ErrCannotUpdate.Error()).WithDebug(core.ErrRecordNotFound.Error()),
 			assertion: assert.Error,

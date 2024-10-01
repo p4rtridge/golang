@@ -4,29 +4,40 @@ import (
 	"context"
 	"order_service/internal/core"
 	"order_service/services/product/entity"
-	productRepo "order_service/services/product/repository/postgres"
+	productAWSRepo "order_service/services/product/repository/aws"
+	productPGRepo "order_service/services/product/repository/postgres"
 )
 
 type ProductUsecase interface {
-	CreateProduct(ctx context.Context, data entity.Product) error
+	CreateProduct(ctx context.Context, data *entity.ProductRequest) error
 	GetProducts(ctx context.Context) (*[]entity.Product, error)
+	SearchProducts(ctx context.Context, nameQuery string) (*[]entity.Product, error)
 	GetProduct(ctx context.Context, productID int) (*entity.Product, error)
-	UpdateProduct(ctx context.Context, productID int, data entity.Product) error
+	UpdateProduct(ctx context.Context, productID int, data *entity.ProductRequest) error
 	DeleteProduct(ctx context.Context, productID int) error
 }
 
 type productUsecase struct {
-	repo productRepo.ProductRepository
+	repo      productPGRepo.ProductRepository
+	awsClient productAWSRepo.AWSClient
 }
 
-func NewUsecase(repo productRepo.ProductRepository) ProductUsecase {
+func NewUsecase(repo productPGRepo.ProductRepository, awsClient productAWSRepo.AWSClient) ProductUsecase {
 	return &productUsecase{
 		repo,
+		awsClient,
 	}
 }
 
-func (uc *productUsecase) CreateProduct(ctx context.Context, data entity.Product) error {
-	err := uc.repo.CreateProduct(ctx, data)
+func (uc *productUsecase) CreateProduct(ctx context.Context, data *entity.ProductRequest) error {
+	imageUrl, err := uc.awsClient.SaveImage(ctx, &data.Image)
+	if err != nil {
+		return core.ErrInternalServerError.WithError(entity.ErrCannotCreate.Error()).WithDebug(err.Error())
+	}
+
+	newProduct := entity.NewProduct(0, data.Name, imageUrl, data.Quantity, data.Price)
+
+	err = uc.repo.CreateProduct(ctx, newProduct)
 	if err != nil {
 		return core.ErrInternalServerError.WithError(entity.ErrCannotCreate.Error()).WithDebug(err.Error())
 	}
@@ -36,6 +47,19 @@ func (uc *productUsecase) CreateProduct(ctx context.Context, data entity.Product
 
 func (uc *productUsecase) GetProducts(ctx context.Context) (*[]entity.Product, error) {
 	products, err := uc.repo.GetProducts(ctx)
+	if err != nil {
+		if err == core.ErrRecordNotFound {
+			return nil, core.ErrNotFound
+		}
+
+		return nil, core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	return products, nil
+}
+
+func (uc *productUsecase) SearchProducts(ctx context.Context, nameQuery string) (*[]entity.Product, error) {
+	products, err := uc.repo.SearchProducts(ctx, nameQuery)
 	if err != nil {
 		if err == core.ErrRecordNotFound {
 			return nil, core.ErrNotFound
@@ -60,8 +84,24 @@ func (uc *productUsecase) GetProduct(ctx context.Context, productID int) (*entit
 	return product, nil
 }
 
-func (uc *productUsecase) UpdateProduct(ctx context.Context, productID int, data entity.Product) error {
-	err := uc.repo.UpdateProduct(ctx, productID, data)
+func (uc *productUsecase) UpdateProduct(ctx context.Context, productID int, data *entity.ProductRequest) error {
+	product, err := uc.repo.GetProduct(ctx, productID)
+	if err != nil {
+		return core.ErrNotFound.WithError(entity.ErrCannotUpdate.Error()).WithDebug(err.Error())
+	}
+
+	err = uc.awsClient.DeleteImage(ctx, product.ImageURL)
+	if err != nil {
+		return core.ErrInternalServerError.WithError(entity.ErrCannotUpdate.Error()).WithDebug(err.Error())
+	}
+
+	imageUrl, err := uc.awsClient.SaveImage(ctx, &data.Image)
+	if err != nil {
+		return core.ErrInternalServerError.WithError(entity.ErrCannotUpdate.Error()).WithDebug(err.Error())
+	}
+
+	updatedProduct := entity.NewProduct(productID, data.Name, imageUrl, data.Quantity, data.Price)
+	err = uc.repo.UpdateProduct(ctx, productID, updatedProduct)
 	if err != nil {
 		return core.ErrInternalServerError.WithError(entity.ErrCannotUpdate.Error()).WithDebug(err.Error())
 	}

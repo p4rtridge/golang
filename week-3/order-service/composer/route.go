@@ -4,16 +4,17 @@ import (
 	"order_service/config"
 	"order_service/middleware"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
 
-func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *redis.Client) {
+func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *redis.Client, s3Client *s3.Client) {
 	// create businesses
 	authUc := ComposeAuthUsecase(cfg, pg, rd)
 	userUc := ComposeUserUsecase(pg)
-	productUc := ComposeProductUsecase(pg)
+	productUc := ComposeProductUsecase(pg, s3Client)
 	orderUc := ComposeOrderUsecase(pg)
 
 	// create services
@@ -50,6 +51,7 @@ func SetUpRoutes(router fiber.Router, cfg *config.Config, pg *pgxpool.Pool, rd *
 	productRouter := router.Group("/products")
 	{
 		productRouter.Get("/", productAPIService.GetProducts)
+		productRouter.Get("/search/", productAPIService.SearchProducts)
 		productRouter.Get("/:productID", productAPIService.GetProduct)
 		productRouter.Post("/", authMiddleware, productAPIService.CreateProduct)
 		productRouter.Put("/:productID", authMiddleware, productAPIService.UpdateProduct)

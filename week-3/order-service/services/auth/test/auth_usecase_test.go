@@ -582,6 +582,52 @@ func (suite *AuthUsecaseTestSuite) TestVerify() {
 	}
 }
 
+func (suite *AuthUsecaseTestSuite) TestSignOutAll() {
+	tests := []struct {
+		name      string
+		ctx       context.Context
+		repoErr   error
+		want      error
+		assertion assert.ErrorAssertionFunc
+	}{
+		{
+			name:      "Successful sign out",
+			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1).String(), "tokenId")),
+			repoErr:   nil,
+			want:      nil,
+			assertion: assert.NoError,
+		},
+		{
+			name:      "Successful sign out",
+			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1).String(), "tokenId")),
+			repoErr:   nil,
+			want:      nil,
+			assertion: assert.NoError,
+		},
+		{
+			name:      "Token repo return an error",
+			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1).String(), "tokenId")),
+			repoErr:   errors.New("this is an error"),
+			want:      core.ErrNotFound.WithError(entity.ErrSignoutFailed.Error()),
+			assertion: assert.Error,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			suite.SetupTest()
+
+			suite.mockTokenRepo.EXPECT().DeleteAllRefreshToken(tt.ctx, gomock.Any()).AnyTimes().Return(tt.repoErr)
+
+			err := suite.usecase.SignOutAll(tt.ctx)
+
+			if tt.assertion(suite.T(), err) {
+				suite.ErrorIs(err, tt.want, "error should be returned correctly")
+			}
+		})
+	}
+}
+
 func TestAuthUsecaseTestSuite(t *testing.T) {
 	suite.Run(t, new(AuthUsecaseTestSuite))
 }

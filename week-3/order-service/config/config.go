@@ -6,6 +6,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsCfg "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -25,9 +29,17 @@ type RDCfg struct {
 	URL string `env-required:"true" env:"REDIS_URL"`
 }
 
+type AWSCfg struct {
+	EndPoint  string `env-required:"true" env:"AWS_S3_ENDPOINT"`
+	Region    string `env-required:"true" env:"AWS_S3_REGION"`
+	AccessKey string `env-required:"true" env:"AWS_S3_ACCESS_KEY"`
+	SecretKey string `env-required:"true" env:"AWS_S3_SECRET_KEY"`
+}
+
 type Config struct {
 	PGCfg
 	RDCfg
+	AWSCfg
 	JWTCfg
 }
 
@@ -83,4 +95,23 @@ func ConnectToRedis(cfg *Config) *redis.Client {
 	opts.PoolSize = 100
 
 	return redis.NewClient(opts)
+}
+
+func ConnectToAWS(cfg *Config) *s3.Client {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	aws_cfg, err := awsCfg.LoadDefaultConfig(ctx)
+	if err != nil {
+		log.Fatalln(fmt.Errorf("aws parse config error: %v", err))
+	}
+
+	client := s3.NewFromConfig(aws_cfg, func(o *s3.Options) {
+		o.Credentials = credentials.NewStaticCredentialsProvider(cfg.AccessKey, cfg.AWSCfg.SecretKey, "")
+		o.BaseEndpoint = aws.String(cfg.EndPoint)
+		o.Region = cfg.Region
+		o.UsePathStyle = true
+	})
+
+	return client
 }

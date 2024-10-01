@@ -12,6 +12,7 @@ import (
 type ProductService interface {
 	CreateProduct(*fiber.Ctx) error
 	GetProducts(*fiber.Ctx) error
+	SearchProducts(*fiber.Ctx) error
 	GetProduct(*fiber.Ctx) error
 	UpdateProduct(*fiber.Ctx) error
 	DeleteProduct(*fiber.Ctx) error
@@ -28,24 +29,41 @@ func NewService(uc productUc.ProductUsecase) ProductService {
 }
 
 func (srv *service) CreateProduct(c *fiber.Ctx) error {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return err
+	}
 	var data entity.ProductRequest
-
-	if err := c.BodyParser(&data); err != nil {
+	if err := pkg.MultipartParser(form, &data); err != nil {
+		return pkg.WriteResponse(c, core.ErrBadRequest)
+	}
+	if err := data.Validate(); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	newProduct := entity.NewProduct(0, data.Name, data.Quantity, data.Price)
-
-	err := srv.usecase.CreateProduct(c.Context(), newProduct)
+	err = srv.usecase.CreateProduct(c.Context(), &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
-
 	return c.Status(fiber.StatusCreated).JSON(core.ResponseData(true))
 }
 
 func (srv *service) GetProducts(c *fiber.Ctx) error {
 	products, err := srv.usecase.GetProducts(c.Context())
+	if err != nil {
+		return pkg.WriteResponse(c, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(core.ResponseData(products))
+}
+
+func (srv *service) SearchProducts(c *fiber.Ctx) error {
+	nameQuery := c.Query("name")
+	if nameQuery == "" {
+		return pkg.WriteResponse(c, core.ErrBadRequest)
+	}
+
+	products, err := srv.usecase.SearchProducts(c.Context(), nameQuery)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -73,15 +91,19 @@ func (srv *service) UpdateProduct(c *fiber.Ctx) error {
 		return pkg.WriteResponse(c, err)
 	}
 
+	form, err := c.MultipartForm()
+	if err != nil {
+		return err
+	}
 	var data entity.ProductRequest
-
-	if err := c.BodyParser(&data); err != nil {
+	if err := pkg.MultipartParser(form, &data); err != nil {
+		return pkg.WriteResponse(c, core.ErrBadRequest)
+	}
+	if err := data.Validate(); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	newData := entity.NewProduct(0, data.Name, data.Quantity, data.Price)
-
-	err = srv.usecase.UpdateProduct(c.Context(), targetId, newData)
+	err = srv.usecase.UpdateProduct(c.Context(), targetId, &data)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}

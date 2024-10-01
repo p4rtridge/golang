@@ -25,10 +25,11 @@ func (suite *ProductTestSuite) SetupTest() {
 }
 
 func (suite *ProductTestSuite) TestNewProduct() {
-	product := entity.NewProduct(1, "orange", 10, 2.5)
+	product := entity.NewProduct(1, "orange", "imageLink", 10, 2.5)
 
 	suite.Equal(1, product.Id, "Id should be set correctly")
 	suite.Equal("orange", product.Name, "Name should be set correctly")
+	suite.Equal("imageLink", product.ImageURL, "ImageURL should be set correctly")
 	suite.Equal(10, product.Quantity, "Quantity should be set correctly")
 	suite.Equal(float32(2.5), product.Price, "Price should be set correctly")
 }

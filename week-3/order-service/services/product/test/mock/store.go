@@ -98,6 +98,21 @@ func (mr *MockProductRepositoryMockRecorder) GetProducts(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProducts", reflect.TypeOf((*MockProductRepository)(nil).GetProducts), ctx)
 }
 
+// SearchProducts mocks base method.
+func (m *MockProductRepository) SearchProducts(ctx context.Context, searchStr string) (*[]entity.Product, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchProducts", ctx, searchStr)
+	ret0, _ := ret[0].(*[]entity.Product)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchProducts indicates an expected call of SearchProducts.
+func (mr *MockProductRepositoryMockRecorder) SearchProducts(ctx, searchStr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchProducts", reflect.TypeOf((*MockProductRepository)(nil).SearchProducts), ctx, searchStr)
+}
+
 // UpdateProduct mocks base method.
 func (m *MockProductRepository) UpdateProduct(ctx context.Context, productID int, data entity.Product) error {
 	m.ctrl.T.Helper()

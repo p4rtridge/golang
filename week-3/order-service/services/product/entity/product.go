@@ -5,16 +5,18 @@ import "time"
 type Product struct {
 	Id        int        `json:"id"`
 	Name      string     `json:"name"`
+	ImageURL  string     `json:"image_url"`
 	Quantity  int        `json:"quantity"`
 	Price     float32    `json:"price"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`
 }
 
-func NewProduct(id int, name string, quantity int, price float32) Product {
+func NewProduct(id int, name, imageURl string, quantity int, price float32) Product {
 	return Product{
 		Id:        id,
 		Name:      name,
+		ImageURL:  imageURl,
 		Quantity:  quantity,
 		Price:     price,
 		CreatedAt: time.Now(),

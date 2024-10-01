@@ -20,6 +20,8 @@ func main() {
 	cfg := config.NewConfig()
 	pg := config.ConnectToPostgres(cfg)
 	rd := config.ConnectToRedis(cfg)
+	s3Client := config.ConnectToAWS(cfg)
+
 	defer pg.Close()
 	defer rd.Close()
 
@@ -28,7 +30,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		BodyLimit: 2 * 1024 * 1024,
+	})
 
 	app.Use(recover.New())
 	app.Use(logger.New())
@@ -39,7 +43,7 @@ func main() {
 			MaxAge: 3600,
 		}))
 
-	composer.SetUpRoutes(app.Group("/v1"), cfg, pg, rd)
+	composer.SetUpRoutes(app.Group("/v1"), cfg, pg, rd, s3Client)
 
 	go func() {
 		log.Println("App runnning, Ctrl + C to shut down")
