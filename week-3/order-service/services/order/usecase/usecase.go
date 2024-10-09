@@ -13,7 +13,7 @@ import (
 type OrderUsecase interface {
 	CreateOrder(ctx context.Context, data *orderEntity.Order) error
 	CreateOrderCallback(order *orderEntity.Order, user *userEntity.User, products *[]productEntity.Product) (bool, error)
-	GetOrders(ctx context.Context, userId int) (*[]orderEntity.Order, error)
+	GetOrders(ctx context.Context) (*[]orderEntity.Order, error)
 	GetTopFiveOrdersByPrice(ctx context.Context) (*[]orderEntity.Order, error)
 	GetNumOfOrdersByMonth(ctx context.Context, userId int) (*[]orderEntity.AggregatedOrdersByMonth, error)
 	GetOrdersSummarize(ctx context.Context, startDate, endDate time.Time) (*[]orderEntity.OrdersSummarize, error)
@@ -31,7 +31,21 @@ func NewUsecase(repo orderRepo.OrderRepository) OrderUsecase {
 }
 
 func (uc *orderUsecase) CreateOrder(ctx context.Context, data *orderEntity.Order) error {
-	err := uc.repo.CreateOrder(ctx, data, uc.CreateOrderCallback)
+	requester := core.GetRequester(ctx)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	role := uid.GetRole()
+	if role == 1 {
+		return core.ErrBadRequest.WithError(orderEntity.ErrCannotCreateOrder.Error())
+	}
+
+	requesterId := uid.GetLocalID()
+	data.SetUserId(int(requesterId))
+
+	err = uc.repo.CreateOrder(ctx, data, uc.CreateOrderCallback)
 	if err != nil {
 		if err == orderEntity.ErrOutOfStock {
 			return core.ErrConfict.WithError(orderEntity.ErrOutOfStock.Error())
@@ -88,8 +102,24 @@ func (uc *orderUsecase) CreateOrderCallback(order *orderEntity.Order, user *user
 	return true, nil
 }
 
-func (uc *orderUsecase) GetOrders(ctx context.Context, userId int) (*[]orderEntity.Order, error) {
-	orders, err := uc.repo.GetOrders(ctx, userId)
+func (uc *orderUsecase) GetOrders(ctx context.Context) (*[]orderEntity.Order, error) {
+	requester := core.GetRequester(ctx)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return nil, core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	requesterId := uid.GetLocalID()
+	role := uid.GetRole()
+
+	var orders *[]orderEntity.Order
+
+	if role == 1 {
+		orders, err = uc.repo.GetOrders(ctx)
+	} else {
+		orders, err = uc.repo.GetOrdersByUserId(ctx, int(requesterId))
+	}
+
 	if err != nil {
 		return nil, core.ErrNotFound.WithError(orderEntity.ErrOrderNotFound.Error()).WithDebug(err.Error())
 	}

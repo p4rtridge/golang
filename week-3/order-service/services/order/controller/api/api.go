@@ -6,7 +6,6 @@ import (
 	"order_service/pkg"
 	orderEntity "order_service/services/order/entity"
 	orderUsecase "order_service/services/order/usecase"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -30,6 +29,19 @@ func NewService(uc orderUsecase.OrderUsecase) OrderService {
 	}
 }
 
+// Create Order godoc
+// @summary Create a new order
+// @description Create a new order with the input payload
+// @tags orders
+// @accept application/json
+// @security BearerAuth
+// @param payload body entity.OrderRequest true "Create order request body"
+// @success 201
+// @failure 400 {object} core.DefaultError
+// @failure 401 {object} core.DefaultError
+// @failure 409 {object} core.DefaultError
+// @failure 500 {object} core.DefaultError
+// @router /orders/ [post]
 func (srv *service) CreateOrder(c *fiber.Ctx) error {
 	var data orderEntity.OrderRequest
 
@@ -45,13 +57,8 @@ func (srv *service) CreateOrder(c *fiber.Ctx) error {
 	if !ok {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
+	ctx := core.ContextWithRequester(c.Context(), requester)
 
-	uid, err := core.DecomposeUID(requester.GetSubject())
-	if err != nil {
-		return core.ErrInternalServerError.WithDebug(err.Error())
-	}
-
-	requesterId := int(uid.GetLocalID())
 	dataItems := data.GetItems()
 	newItems := make([]orderEntity.OrderItem, 0, len(dataItems))
 
@@ -61,9 +68,9 @@ func (srv *service) CreateOrder(c *fiber.Ctx) error {
 		newItems = append(newItems, newItem)
 	}
 
-	newOrder := orderEntity.NewOrder(0, requesterId, 0.0, newItems)
+	newOrder := orderEntity.NewOrder(0, 0, 0.0, newItems)
 
-	err = srv.usecase.CreateOrder(c.Context(), &newOrder)
+	err := srv.usecase.CreateOrder(ctx, &newOrder)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -71,19 +78,24 @@ func (srv *service) CreateOrder(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(core.ResponseData(true))
 }
 
+// Get Orders godoc
+// @summary Get Orders
+// @description Get all of orders of the current user or entire users based on user's role
+// @tags orders
+// @security BearerAuth
+// @success 200 {array} entity.Order
+// @failure 401 {object} core.DefaultError
+// @failure 404 {object} core.DefaultError
+// @failure 500 {object} core.DefaultError
+// @router /orders/ [get]
 func (srv *service) GetOrders(c *fiber.Ctx) error {
 	requester, ok := c.Locals(core.KeyRequester).(core.Requester)
 	if !ok {
 		return pkg.WriteResponse(c, core.ErrUnauthorized)
 	}
+	ctx := core.ContextWithRequester(c.Context(), requester)
 
-	uid, err := core.DecomposeUID(requester.GetSubject())
-	if err != nil {
-		return pkg.WriteResponse(c, core.ErrInternalServerError.WithDebug(err.Error()))
-	}
-	requesterId := int(uid.GetLocalID())
-
-	orders, err := srv.usecase.GetOrders(c.Context(), requesterId)
+	orders, err := srv.usecase.GetOrders(ctx)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
@@ -91,22 +103,28 @@ func (srv *service) GetOrders(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(core.ResponseData(orders))
 }
 
+// Get Orders Summarize godoc
+// @summary Get Orders Summarize
+// @description Get summarized orders of the current user and export to excel
+// @tags orders
+// @security BearerAuth
+// @param payload body entity.OrdersSummarizeReq true "Order summary request body"
+// @success 301
+// @failure 500 {object} core.DefaultError
+// @router /orders/summarize [get]
 func (srv *service) GetOrdersSummarize(c *fiber.Ctx) error {
-	var inlineStruct struct {
-		StartDate time.Time `json:"start_date"`
-		EndDate   time.Time `json:"end_date"`
-	}
+	var orderSummaryReq orderEntity.OrdersSummarizeReq
 
-	if err := c.BodyParser(&inlineStruct); err != nil {
+	if err := c.BodyParser(&orderSummaryReq); err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	datas, err := srv.usecase.GetOrdersSummarize(c.Context(), inlineStruct.StartDate, inlineStruct.EndDate)
+	datas, err := srv.usecase.GetOrdersSummarize(c.Context(), orderSummaryReq.StartDate, orderSummaryReq.EndDate)
 	if err != nil {
 		return pkg.WriteResponse(c, err)
 	}
 
-	excelName, err := pkg.GenerateExcel(datas, inlineStruct.StartDate, inlineStruct.EndDate)
+	excelName, err := pkg.GenerateExcel(datas, orderSummaryReq.StartDate, orderSummaryReq.EndDate)
 	if err != nil {
 		return pkg.WriteResponse(c, core.ErrInternalServerError.WithDebug(err.Error()))
 	}
@@ -114,6 +132,15 @@ func (srv *service) GetOrdersSummarize(c *fiber.Ctx) error {
 	return c.Redirect(fmt.Sprintf("/static/%s", excelName), fiber.StatusMovedPermanently)
 }
 
+// Get Top Five Orders Order By Price godoc
+// @summary Get Top Five Orders
+// @description Get top five orders order by price
+// @tags orders
+// @security BearerAuth
+// @success 200 {array} entity.Order
+// @failure 404 {object} core.DefaultError
+// @failure 500 {object} core.DefaultError
+// @router /orders/top-by-price [get]
 func (srv *service) GetTopFiveOrdersByPrice(c *fiber.Ctx) error {
 	orders, err := srv.usecase.GetTopFiveOrdersByPrice(c.Context())
 	if err != nil {
@@ -123,6 +150,17 @@ func (srv *service) GetTopFiveOrdersByPrice(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(core.ResponseData(orders))
 }
 
+// Get Order godoc
+// @summary Get Order
+// @description Get specific order of the current user and export to pdf
+// @tags orders
+// @security BearerAuth
+// @param orderID path int true "Order's ID"
+// @success 301
+// @failure 401 {object} core.DefaultError
+// @failure 404 {object} core.DefaultError
+// @failure 500 {object} core.DefaultError
+// @router /orders/:orderID/invoice [get]
 func (srv *service) GetOrder(c *fiber.Ctx) error {
 	targetOrderId, err := c.ParamsInt("orderID")
 	if err != nil {
@@ -153,6 +191,16 @@ func (srv *service) GetOrder(c *fiber.Ctx) error {
 	return c.Redirect(fmt.Sprintf("/static/invoice-%d-%d.pdf", order.GetUserIdSafe(), order.GetIdSafe()), fiber.StatusMovedPermanently)
 }
 
+// Get Aggregated Orders By Month godoc
+// @summary Get Aggregated Orders By Month
+// @description Get aggregated orders group by month of the current user
+// @tags orders
+// @security BearerAuth
+// @success 200
+// @failure 401 {object} core.DefaultError
+// @failure 404 {object} core.DefaultError
+// @failure 500 {object} core.DefaultError
+// @router /orders/orders-by-month [get]
 func (srv *service) GetNumOfOrdersByMonth(c *fiber.Ctx) error {
 	requester, ok := c.Locals(core.KeyRequester).(core.Requester)
 	if !ok {

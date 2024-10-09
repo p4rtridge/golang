@@ -1,0 +1,736 @@
+basePath: /v1
+definitions:
+  core.DefaultError:
+    properties:
+      code:
+        description: |-
+          status code
+          ex: 404
+        type: integer
+      debug:
+        description: debug information
+        type: string
+      message:
+        description: |-
+          error message
+          ex: the resource could be not found
+        type: string
+      status:
+        description: |-
+          status description
+          ex: not found
+        type: string
+    type: object
+  entity.AuthLogin:
+    properties:
+      device_id:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  entity.AuthSignOut:
+    properties:
+      device_id:
+        type: string
+    type: object
+  entity.AuthUsernamePassword:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  entity.Order:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/entity.OrderItem'
+        type: array
+      total_price:
+        type: number
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  entity.OrderItem:
+    properties:
+      order_id:
+        type: integer
+      product_id:
+        type: integer
+      product_name:
+        type: string
+      product_price:
+        type: number
+      quantity:
+        type: integer
+    type: object
+  entity.OrderRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/entity.ProductItem'
+        type: array
+    type: object
+  entity.OrdersSummarizeReq:
+    properties:
+      end_date:
+        type: string
+      start_date:
+        type: string
+    type: object
+  entity.Product:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  entity.ProductItem:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  entity.RefreshTokenRequest:
+    properties:
+      device_id:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  entity.Token:
+    properties:
+      expire_in:
+        type: integer
+      token:
+        type: string
+    type: object
+  entity.TokenResponse:
+    properties:
+      access_token:
+        $ref: '#/definitions/entity.Token'
+      refresh_token:
+        $ref: '#/definitions/entity.Token'
+    type: object
+  entity.User:
+    properties:
+      balance:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: integer
+      role:
+        type: integer
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  entity.UserRequest:
+    properties:
+      balance:
+        type: number
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: anhduc130703@gmail.com
+    name: partridge
+  description: An order server handles order requests
+  license:
+    name: MIT
+  title: Order Service API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login a specific user with the input payload
+      parameters:
+      - description: Auth login request body
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entity.AuthLogin'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      summary: Login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Rotate current user's session token
+      parameters:
+      - description: Auth refresh request body
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entity.RefreshTokenRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      summary: Refresh token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the input payload
+      parameters:
+      - description: Auth register request body
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entity.AuthUsernamePassword'
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      summary: Create a new user
+      tags:
+      - auth
+  /auth/sign-out:
+    post:
+      consumes:
+      - application/json
+      description: Sign out current user's session with specific device
+      parameters:
+      - description: Auth sign out request body
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entity.AuthSignOut'
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Sign out
+      tags:
+      - auth
+  /auth/sign-out-all:
+    post:
+      consumes:
+      - application/json
+      description: Sign out current user's session from all devices
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Sign out all
+      tags:
+      - auth
+  /orders/:
+    get:
+      description: Get all of orders of the current user or entire users based on
+        user's role
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Order'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Get Orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Create a new order with the input payload
+      parameters:
+      - description: Create order request body
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entity.OrderRequest'
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Create a new order
+      tags:
+      - orders
+  /orders/:orderID/invoice:
+    get:
+      description: Get specific order of the current user and export to pdf
+      parameters:
+      - description: Order's ID
+        in: path
+        name: orderID
+        required: true
+        type: integer
+      responses:
+        "301":
+          description: Moved Permanently
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Get Order
+      tags:
+      - orders
+  /orders/orders-by-month:
+    get:
+      description: Get aggregated orders group by month of the current user
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Get Aggregated Orders By Month
+      tags:
+      - orders
+  /orders/summarize:
+    get:
+      description: Get summarized orders of the current user and export to excel
+      parameters:
+      - description: Order summary request body
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entity.OrdersSummarizeReq'
+      responses:
+        "301":
+          description: Moved Permanently
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Get Orders Summarize
+      tags:
+      - orders
+  /orders/top-by-price:
+    get:
+      description: Get top five orders order by price
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Order'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Get Top Five Orders
+      tags:
+      - orders
+  /products/:
+    get:
+      description: Get entire products
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Product'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      summary: Get Products
+      tags:
+      - products
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a new product with input payload
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Create Product
+      tags:
+      - products
+  /products/:productID:
+    delete:
+      description: Delete the specific product
+      parameters:
+      - description: Product's ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Delete Product
+      tags:
+      - products
+    get:
+      description: Get specific product
+      parameters:
+      - description: Product's ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Product'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      summary: Get Product
+      tags:
+      - products
+    put:
+      description: Update the specific product
+      parameters:
+      - description: Product's ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Update Product
+      tags:
+      - products
+  /products/search:
+    get:
+      description: Search products with input query string
+      parameters:
+      - description: Query string
+        in: query
+        name: name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Product'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      summary: Search Products
+      tags:
+      - products
+  /users/:
+    get:
+      description: Get entire users
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.User'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Get Users
+      tags:
+      - users
+  /users/:userID:
+    get:
+      description: Get specific user
+      parameters:
+      - description: User's ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Get User
+      tags:
+      - users
+  /users/balance:
+    post:
+      description: Add user balance
+      parameters:
+      - description: User request body
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UserRequest'
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Add User Balance
+      tags:
+      - users
+  /users/profile:
+    get:
+      description: Get the current user profile
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.DefaultError'
+      security:
+      - BearerAuth: []
+      summary: Get User Profile
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Enter your bearer token in the format **Bearer &lt;token&gt;**
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

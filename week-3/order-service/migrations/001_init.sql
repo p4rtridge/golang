@@ -37,10 +37,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   product_price real,
   quantity      real,
 
-  PRIMARY KEY (order_id, product_id),
-
-  CONSTRAINT fk_order FOREIGN KEY (order_id) REFERENCES orders(id),
-  CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+  PRIMARY KEY (order_id, product_id)
 );
 
 --CREATE TYPE order_status AS ENUM ('pending', 'done', 'canceled');

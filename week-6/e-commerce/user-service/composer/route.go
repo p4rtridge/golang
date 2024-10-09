@@ -1,0 +1,4 @@
+package composer
+
+func SetupRoutes() {
+}

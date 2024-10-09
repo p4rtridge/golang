@@ -6,6 +6,7 @@ type User struct {
 	Id        int        `json:"id"`
 	Username  string     `json:"username"`
 	Password  string     `json:"-"` // sensitive field, should not send to user
+	Role      int        `json:"role"`
 	Balance   float32    `json:"balance"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`

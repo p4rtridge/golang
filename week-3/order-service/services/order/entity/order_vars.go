@@ -24,6 +24,11 @@ type OrdersSummarize struct {
 	AverageOrderItemQuantity float32 `json:"average_order_item_quantity"`
 }
 
+type OrdersSummarizeReq struct {
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
 func (data OrderRequest) Validate() error {
 	if len(data.Items) < 1 {
 		return ErrItemEmpty

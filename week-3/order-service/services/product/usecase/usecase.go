@@ -30,6 +30,17 @@ func NewUsecase(repo productPGRepo.ProductRepository, awsClient productAWSRepo.A
 }
 
 func (uc *productUsecase) CreateProduct(ctx context.Context, data *entity.ProductRequest) error {
+	requester := core.GetRequester(ctx)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	role := uid.GetRole()
+	if role != 1 {
+		return core.ErrBadRequest.WithError(entity.ErrCannotCreate.Error())
+	}
+
 	imageUrl, err := uc.awsClient.SaveImage(ctx, &data.Image)
 	if err != nil {
 		return core.ErrInternalServerError.WithError(entity.ErrCannotCreate.Error()).WithDebug(err.Error())
@@ -85,6 +96,17 @@ func (uc *productUsecase) GetProduct(ctx context.Context, productID int) (*entit
 }
 
 func (uc *productUsecase) UpdateProduct(ctx context.Context, productID int, data *entity.ProductRequest) error {
+	requester := core.GetRequester(ctx)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	role := uid.GetRole()
+	if role != 1 {
+		return core.ErrBadRequest.WithError(entity.ErrCannotUpdate.Error())
+	}
+
 	product, err := uc.repo.GetProduct(ctx, productID)
 	if err != nil {
 		return core.ErrNotFound.WithError(entity.ErrCannotUpdate.Error()).WithDebug(err.Error())
@@ -110,7 +132,18 @@ func (uc *productUsecase) UpdateProduct(ctx context.Context, productID int, data
 }
 
 func (uc *productUsecase) DeleteProduct(ctx context.Context, productID int) error {
-	err := uc.repo.DeleteProduct(ctx, productID)
+	requester := core.GetRequester(ctx)
+	uid, err := core.DecomposeUID(requester.GetSubject())
+	if err != nil {
+		return core.ErrInternalServerError.WithDebug(err.Error())
+	}
+
+	role := uid.GetRole()
+	if role != 1 {
+		return core.ErrBadRequest.WithError(entity.ErrCannotDelete.Error())
+	}
+
+	err = uc.repo.DeleteProduct(ctx, productID)
 	if err != nil {
 		return core.ErrBadRequest.WithError(entity.ErrCannotDelete.Error()).WithDebug(err.Error())
 	}

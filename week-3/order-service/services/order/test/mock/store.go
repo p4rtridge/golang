@@ -88,18 +88,33 @@ func (mr *MockOrderRepositoryMockRecorder) GetOrder(ctx, userId, orderId any) *g
 }
 
 // GetOrders mocks base method.
-func (m *MockOrderRepository) GetOrders(ctx context.Context, userId int) (*[]entity.Order, error) {
+func (m *MockOrderRepository) GetOrders(ctx context.Context) (*[]entity.Order, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrders", ctx, userId)
+	ret := m.ctrl.Call(m, "GetOrders", ctx)
 	ret0, _ := ret[0].(*[]entity.Order)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOrders indicates an expected call of GetOrders.
-func (mr *MockOrderRepositoryMockRecorder) GetOrders(ctx, userId any) *gomock.Call {
+func (mr *MockOrderRepositoryMockRecorder) GetOrders(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderRepository)(nil).GetOrders), ctx, userId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderRepository)(nil).GetOrders), ctx)
+}
+
+// GetOrdersByUserId mocks base method.
+func (m *MockOrderRepository) GetOrdersByUserId(ctx context.Context, userId int) (*[]entity.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrdersByUserId", ctx, userId)
+	ret0, _ := ret[0].(*[]entity.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrdersByUserId indicates an expected call of GetOrdersByUserId.
+func (mr *MockOrderRepositoryMockRecorder) GetOrdersByUserId(ctx, userId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserId", reflect.TypeOf((*MockOrderRepository)(nil).GetOrdersByUserId), ctx, userId)
 }
 
 // GetOrdersSummarize mocks base method.

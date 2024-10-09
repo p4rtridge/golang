@@ -9,21 +9,27 @@ import (
 
 type UID struct {
 	localID uint32
+	role    uint32
 }
 
-func NewUID(localID uint32) UID {
+func NewUID(localID uint32, role uint32) UID {
 	return UID{
 		localID: localID,
+		role:    role,
 	}
 }
 
 func (uid UID) String() string {
-	value := uint64(uid.localID) << 31
+	value := uint64(uid.localID)<<31 | uint64(uid.role)<<30
 	return base64.RawStdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", value)))
 }
 
 func (uid UID) GetLocalID() uint32 {
 	return uid.localID
+}
+
+func (uid UID) GetRole() uint32 {
+	return uid.role
 }
 
 func DecomposeUID(s string) (UID, error) {
@@ -43,6 +49,7 @@ func DecomposeUID(s string) (UID, error) {
 
 	u := UID{
 		localID: uint32(uid >> 31),
+		role:    uint32(uid >> 30 & 0x1),
 	}
 
 	return u, nil

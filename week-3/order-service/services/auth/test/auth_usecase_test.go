@@ -592,21 +592,21 @@ func (suite *AuthUsecaseTestSuite) TestSignOutAll() {
 	}{
 		{
 			name:      "Successful sign out",
-			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1).String(), "tokenId")),
+			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1, 0).String(), "tokenId")),
 			repoErr:   nil,
 			want:      nil,
 			assertion: assert.NoError,
 		},
 		{
 			name:      "Successful sign out",
-			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1).String(), "tokenId")),
+			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1, 0).String(), "tokenId")),
 			repoErr:   nil,
 			want:      nil,
 			assertion: assert.NoError,
 		},
 		{
 			name:      "Token repo return an error",
-			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1).String(), "tokenId")),
+			ctx:       core.ContextWithRequester(context.Background(), core.NewRequester(core.NewUID(1, 0).String(), "tokenId")),
 			repoErr:   errors.New("this is an error"),
 			want:      core.ErrNotFound.WithError(entity.ErrSignoutFailed.Error()),
 			assertion: assert.Error,

@@ -1,0 +1,31 @@
+services:
+  user-srv:
+    container_name: user-srv
+    hostname: user-service
+    image: user-service:lastest
+    build:
+      context: user-service
+      dockerfile: Dockerfile
+    networks:
+      - e-commerce
+    volumes:
+      - app:/e-commerce
+
+  order-srv:
+    container_name: order-srv
+    hostname: order-service
+    image: order-service:lastest
+    build:
+      context: order-service
+      dockerfile: Dockerfile
+    networks:
+      - e-commerce
+    volumes:
+      - app:/e-commerce
+
+volumes:
+  app:
+
+networks:
+  e-commerce:
+    driver: bridge

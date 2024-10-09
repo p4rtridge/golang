@@ -20,10 +20,11 @@ func (suite *AuthTestSuite) SetupTest() {
 }
 
 func (suite *AuthTestSuite) TestNewAuth() {
-	auth := entity.NewAuth("partridge", "130703")
+	auth := entity.NewAuth("partridge", "130703", 0)
 
 	suite.Equal("partridge", auth.Username, "Username should be set correctly")
 	suite.Equal("130703", auth.Password, "Password should be set correctly")
+	suite.Equal(0, auth.Role, "Password should be set correctly")
 }
 
 func TestAuthTestSuite(t *testing.T) {

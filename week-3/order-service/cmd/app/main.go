@@ -10,12 +10,31 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "order_service/docs"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/swagger"
 )
 
+// @title Order Service API
+// @version 1.0
+// @description An order server handles order requests
+
+// @contact.name partridge
+// @contact.email anhduc130703@gmail.com
+
+// @license.name MIT
+
+// @host localhost:8080
+// @BasePath /v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Enter your bearer token in the format **Bearer &lt;token&gt;**
 func main() {
 	cfg := config.NewConfig()
 	pg := config.ConnectToPostgres(cfg)
@@ -42,6 +61,8 @@ func main() {
 			Browse: true,
 			MaxAge: 3600,
 		}))
+
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	composer.SetUpRoutes(app.Group("/v1"), cfg, pg, rd, s3Client)
 

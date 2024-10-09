@@ -299,7 +299,6 @@ func (suite *OrderUsecaseTestSuite) TestCreateOrderCallback() {
 func (suite *OrderUsecaseTestSuite) TestGetOrders() {
 	tests := []struct {
 		name      string
-		userId    int
 		repoErr   error
 		want      *[]orderEntity.Order
 		wantErr   error
@@ -307,7 +306,6 @@ func (suite *OrderUsecaseTestSuite) TestGetOrders() {
 	}{
 		{
 			name:    "Successful get orders",
-			userId:  1,
 			repoErr: nil,
 			want: &[]orderEntity.Order{
 				{
@@ -330,7 +328,6 @@ func (suite *OrderUsecaseTestSuite) TestGetOrders() {
 		},
 		{
 			name:      "Repo return an error",
-			userId:    1,
 			repoErr:   errors.New("this is an error"),
 			want:      nil,
 			wantErr:   core.ErrNotFound.WithError(orderEntity.ErrOrderNotFound.Error()).WithDebug(errors.New("this is an error").Error()),
@@ -342,9 +339,9 @@ func (suite *OrderUsecaseTestSuite) TestGetOrders() {
 		suite.Run(tt.name, func() {
 			suite.SetupTest()
 
-			suite.mockRepo.EXPECT().GetOrders(gomock.Any(), tt.userId).Return(tt.want, tt.repoErr)
+			suite.mockRepo.EXPECT().GetOrders(gomock.Any()).Return(tt.want, tt.repoErr)
 
-			orders, err := suite.usecase.GetOrders(context.Background(), tt.userId)
+			orders, err := suite.usecase.GetOrders(context.Background())
 
 			suite.Equal(tt.want, orders, "orders should be retrieved correctly")
 

@@ -1,0 +1,28 @@
+basePath: /v1
+host: localhost:8080
+info:
+  contact:
+    email: anhduc130703@gmail.com
+    name: partridge
+    url: https://iloveyour.dad
+  description: This is a example server for API document purpose
+  license:
+    name: MIT
+    url: https://opensource.org/license/mit
+  termsOfService: http://swagger.io/terms/
+  title: API document example
+  version: "1"
+paths:
+  /orders/code/{orderCode}:
+    get:
+      description: Getting Order by Code in detail
+      operationId: your-mom
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Getting Order by Code
+      tags:
+      - Orders
+swagger: "2.0"

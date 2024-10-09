@@ -51,7 +51,7 @@ func (uc *authUsecase) Register(ctx context.Context, data authEntity.AuthUsernam
 		return core.ErrInternalServerError.WithError(authEntity.ErrCannotRegister.Error()).WithDebug(err.Error())
 	}
 
-	newAuth := authEntity.NewAuth(data.Username, hashedPassword)
+	newAuth := authEntity.NewAuth(data.Username, hashedPassword, 0)
 
 	if err := uc.repo.AddAuth(ctx, newAuth); err != nil {
 		return core.ErrInternalServerError.WithError(authEntity.ErrCannotRegister.Error()).WithDebug(err.Error())
@@ -77,7 +77,7 @@ func (uc *authUsecase) Login(ctx context.Context, data authEntity.AuthLogin) (*a
 		return nil, core.ErrBadRequest.WithError(authEntity.ErrLoginFailed.Error())
 	}
 
-	uid := core.NewUID(uint32(authData.Id))
+	uid := core.NewUID(uint32(authData.Id), uint32(authData.Role))
 	sub := uid.String()
 	tid := uuid.New().String()
 

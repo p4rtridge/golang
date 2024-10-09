@@ -28,3 +28,7 @@ cover: test
 .PHONY: migrate
 migrate:
 	 go run ./migrations/migrate.go
+
+.PHONY: docs
+docs:
+	 swag init -q -g ./cmd/app/main.go && make run
