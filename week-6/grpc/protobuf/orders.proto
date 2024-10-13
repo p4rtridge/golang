@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package orders;
+
+option go_package = "kitchen/common/orders";
+
+import "order_msg.proto";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse);
+}
